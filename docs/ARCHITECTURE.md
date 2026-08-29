@@ -52,8 +52,8 @@ definidas pelo Domain/Application (inversão de dependência via DI nativa do .N
 (Corrente/Poupança, apenas cosmético — sem regra de negócio diferente entre os tipos), `PasswordHash`,
 `Balance`, `CreatedAt`.
 
-**Movement** — `Id`, `AccountId`, `Type` (Credit/Debit), `Amount`, `Timestamp`, resultado aplicado via
-strategy.
+**Movement** — `Id`, `AccountId`, `Type` (Credit/Debit), `Amount`, `Timestamp`, `Counterparty`
+(label da contraparte, ex.: `JOAO789-09 CC`), resultado aplicado via strategy.
 
 **AuditLog** — `Id`, `EntityType`, `EntityId`, `Action`, `Payload` (JSON), `Timestamp`.
 
@@ -76,6 +76,16 @@ linha da conta — seja crédito ou débito — detecta que a versão mudou, fal
 efetivamente as escritas por conta, sem exigir lock pessimista no banco, e cobre os dois cenários com a
 mesma proteção.
 
+### Contraparte
+
+- `POST /accounts/{id}/movements` aceita `CounterpartyCpf` (opcional): ausente → auto-depósito
+  (`AUTO-DEPOSITO {NNN-NN} CC`, com o próprio CPF da conta); informado → resolve a conta por CPF
+  (único no schema); não encontrada → erro `CounterpartyNotFound` (400).
+- Label congelado na criação: `{NOME EM MAIÚSCULAS, SEM ACENTO} {CPF mascarado NNN-NN} CC`
+  (ex.: `JOAO789-09 CC`), com sufixo sempre `CC` — no exercício todas as contas são correntes.
+- Contraparte é sempre a própria conta (depósito na boca do caixa) ou outra conta do sistema —
+  ver ADR 0002.
+
 ## 6. Autenticação
 
 Autenticação simples por CPF + senha — a própria `Account` é a identidade, sem tabela de usuário separada.
@@ -92,7 +102,7 @@ Autenticação simples por CPF + senha — a própria `Account` é a identidade,
 |---|---|---|
 | `POST` | `/accounts` | Cria conta (Idempotency-Key opcional) |
 | `POST` | `/auth/login` | Autentica por CPF + senha, devolve JWT |
-| `POST` | `/accounts/{id}/movements` | Registra entrada/saída (Idempotency-Key obrigatório) |
+| `POST` | `/accounts/{id}/movements` | Registra entrada/saída (Idempotency-Key obrigatório; `CounterpartyCpf` opcional) |
 | `GET` | `/accounts/{id}/balance` | Consulta saldo disponível |
 | `GET` | `/accounts/{id}/movements` | Histórico de movimentações, paginado |
 

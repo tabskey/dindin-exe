@@ -68,6 +68,42 @@
 ## 2026-08-29 — Deep Copilot (Seed inicial + migração)
 - Ação: criada a migração EF Core `InitialCreate` (schema) — pacote Design no Infrastructure, `DesignTimeDbContextFactory`, tool local `dotnet-ef` (`dotnet-tools.json` na raiz); serial da conta mudou para o formato `00xxx-xx`; `DbInitializer` agora faz `Migrate()` + `Seed()` com 3 contas (Ana/Bruno/Carlos Teste — CPF `xxx.xxx.xxx-xx`, senha `senha123`) e 8 movimentações com saldos consistentes (aplicadas pelas strategies do domínio; Carlos zera o saldo como caso de borda — negativo nunca)
 - Motivo: pedido do usuário — dados iniciais com movimentações para testes e checagem da regra de saldo negativo
-- Arquivos alterados: criados `src/backend/Infrastructure/Migrations/*`, `DesignTimeDbContextFactory.cs`, `.config/dotnet-tools.json`; editados `DbInitializer.cs`, `Domain/Entities/Account.cs`, `PersistenceTests.cs`, `AccountTests.cs`, `Infrastructure.csproj`
+- Arquivos alterados: criados `src/backend/Infrastructure/Migrations/*`, `DesignTimeDbContextFactory.cs`, `dotnet-tools.json`; editados `DbInitializer.cs`, `Domain/Entities/Account.cs`, `PersistenceTests.cs`, `AccountTests.cs`, `Infrastructure.csproj`
 - Testes: 64 passando (novos: formato do serial, seed com movimentações e BCrypt, consistência saldo×movimentações, migração aplicada em SQLite in-memory)
 - ADR relacionado: nenhum (EnsureCreated → Migrate continua dentro da opção "migrations/EnsureCreated" do ARCHITECTURE.md)
+
+## 2026-08-29 — Deep Copilot (Avatar)
+- Ação: adicionado avatar ao modelo de conta — colunas `Avatar` (BLOB) e `AvatarContentType` (TEXT) nullable em `Account` (migração `AddAvatar`; linhas existentes intactas), `Account.SetAvatar`, `UpdateAvatarAsync`/`GetAvatarAsync` no `AccountService` (validação: JPEG/PNG/WebP e máx. 512 KB; códigos `InvalidAvatar`/`AvatarNotFound`) e `AvatarDto`; endpoints ficam para a Fase 4
+- Motivo: pedido do usuário — usuários com foto; SQLite suporta BLOB; limite de 512 KB confirmado
+- Arquivos alterados: `Account.cs`, `DomainErrorCode.cs`, `AppDbContext.cs`, `Responses.cs`, `IAccountService.cs`, `AccountService.cs`, `AuditedAccountService.cs`, migração `AddAvatar`, 8 testes novos (serviço + persistência)
+- Testes: 72 passando; `dotnet format` limpo
+- ADR relacionado: nenhum (mudança aditiva de esquema, sem alteração estrutural)
+
+## 2026-08-29 16:14 — Deep Copilot (Fase 4 — Api)
+- Ação: implementados os endpoints da camada Api — `Program.cs` reescrito: DI completa (repositórios, services com decorators de auditoria, `JwtOptions`/`JwtTokenService`), autenticação JWT (`AddAuthentication` + `AddJwtBearer` com validação de issuer/audience/key/lifetime), endpoints com `WithName` + OpenAPI e autorização por dono (`IsOwner`: claim `accountId` do token vs rota); `Api/Auth/` (`JwtTokenService`, `JwtOptions`); seção `Jwt` no `appsettings.json`; avatar ligado aos endpoints (POST multipart com `.DisableAntiforgery()`, GET como stream via `Results.File`)
+- Motivo: fase 4 do checklist — endpoints, JWT, autorização e avatar especificados em `ARCHITECTURE.md` §6-7
+- Arquivos alterados: `Api/Program.cs`, `Api/appsettings.json`, criados `Api/Auth/JwtTokenService.cs` e `Api/Auth/JwtOptions.cs`; `Api.http` atualizado com os fluxos manuais
+- Testes: `dotnet build` 0 erros/0 avisos; 72 testes passando; `dotnet format --verify-no-changes` limpo; fluxo manual verificado via curl (script `verify-fase4.ps1`, depois removido): login JWT, saldo 1050 → crédito 50 → 1100, replay idempotente não duplica (mesmo movement id), débito acima do saldo → 400, chave ausente → 400, histórico paginado, 401 sem token, 403 com token de outra conta, conta criada (201), CPF duplicado → 409, avatar upload 204 / download 200 / > 512 KB → 400
+- ADR relacionado: nenhum (implementação do já especificado em `ARCHITECTURE.md`; checklist atualizado para Fase 5)
+
+## 2026-08-29 16:30 — Deep Copilot (Campo Contraparte)
+- Ação: adicionado `Movement.Counterparty` (label congelado na criação) + `CounterpartyCpf` opcional no
+  `POST /accounts/{id}/movements` — ausente → `AUTO-DEPOSITO {NNN-NN} CC` (depósito na boca do caixa,
+  próprio CPF); informado → resolve a conta por CPF (único) e monta `{NOME} {NNN-NN} CC` (ex.:
+  `JOAO789-09 CC`); CPF inexistente → `CounterpartyNotFound` (400). Formatação em
+  `Domain/Entities/CounterpartyLabel.cs` (maiúsculas sem acento + máscara dos 5 últimos dígitos + sufixo
+  `CC`); migração `AddCounterparty` (coluna nullable); seed com contrapartes de exemplo e Bruno como
+  `Checking` (todas as contas do exercício são correntes)
+- Motivo: pedido do usuário — extrato com contraparte ("Ana recebeu do João +50 → JOAO789-09 CC");
+  mudança de contrato documentada em ADR 0002
+- Arquivos alterados: criados `Domain/Entities/CounterpartyLabel.cs`, migração `AddCounterparty`,
+  `docs/adr/0002-campo-contraparte-em-movimentacoes.md`, `CounterpartyLabelTests.cs`; editados
+  `Domain/Entities/Movement.cs`, `Domain/Results/DomainErrorCode.cs`, `Application/Dtos/Requests.cs`,
+  `Application/Dtos/Responses.cs`, `Application/Services/MovementService.cs`,
+  `Infrastructure/Persistence/AppDbContext.cs`, `Infrastructure/Persistence/DbInitializer.cs`,
+  `Api/Api.http`, `Api.Tests/Application/MovementServiceTests.cs`,
+  `Api.Tests/Infrastructure/PersistenceTests.cs`, `docs/ARCHITECTURE.md`
+- Testes: 80 passando (8 novos: máscara/formatação do label, resolução por CPF, auto-depósito,
+  contraparte inexistente, seed com contrapartes, migração); `dotnet build` 0 erros/0 avisos;
+  `dotnet format` limpo
+- ADR relacionado: 0002 (Aceito)

@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
             account.HasIndex(a => a.Cpf).IsUnique();
             account.Property(a => a.PasswordHash).IsRequired();
             account.Property(a => a.Balance).HasPrecision(18, 2);
+            account.Property(a => a.AvatarContentType).HasMaxLength(50);
             // SQLite não gera rowversion nativamente; o valor é atribuído pelo RowVersionInterceptor.
             account.Property(a => a.RowVersion).IsConcurrencyToken();
             account.HasMany<Movement>().WithOne().HasForeignKey(m => m.AccountId);
@@ -34,6 +35,7 @@ public class AppDbContext : DbContext
             movement.HasKey(m => m.Id);
             movement.Property(m => m.Id).ValueGeneratedOnAdd();
             movement.Property(m => m.Amount).HasPrecision(18, 2);
+            movement.Property(m => m.Counterparty).HasMaxLength(120);
             movement.HasIndex(m => m.AccountId);
         });
 
