@@ -27,10 +27,10 @@ jobs:
 
       # 3. Restaura as dependências da solution
       - name: Restore dependencies
-        run: dotnet restore src/Dindin.slnx
+        run: dotnet restore src/backend/Dindin.slnx
 
       # 4. Roda os testes com o gate de cobertura. O GitHub Actions define a variável
       #    de ambiente CI=true automaticamente, o que ativa a medição e o threshold de
       #    80% de linhas no Api.Tests.csproj (coverlet). O job falha se ficar abaixo.
       - name: Run tests with coverage gate
-        run: dotnet test src/Dindin.slnx --no-restore --nologo
+        run: dotnet test src/backend/Dindin.slnx --no-restore --nologo

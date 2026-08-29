@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "t4nJiNFtIY8=",
+  "success": true,
+  "projectFilePath": "c:\\Users\\tabma\\OneDrive\\Documentos\\Projetos\\dindin-exe\\.git-rewrite\\t\\src\\Api\\Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\tabma\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.11\\microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512",
+    "C:\\Users\\tabma\\.nuget\\packages\\microsoft.openapi\\2.7.5\\microsoft.openapi.2.7.5.nupkg.sha512"
+  ],
+  "logs": []
+}

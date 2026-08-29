@@ -28,8 +28,8 @@ código, em cada fase.
 
 ## Fase 0 — Estrutura da solução ✅
 
-- [x] Criar solution e projetos: `src/Domain`, `src/Application`, `src/Infrastructure` (class libs) e
-      `src/Api.Tests` (xUnit).
+- [x] Criar solution e projetos: `src/backend/Domain`, `src/backend/Application`, `src/backend/Infrastructure`
+      (class libs) e `src/backend/Api.Tests` (xUnit).
 - [x] Referências: `Api → Application/Domain/Infrastructure`; `Infrastructure → Domain/Application`;
       `Api.Tests → Api` (WebApplicationFactory).
 - [x] Pacotes: `Microsoft.EntityFrameworkCore.Sqlite` (Infrastructure), `Microsoft.AspNetCore.Authentication.JwtBearer`

@@ -41,3 +41,10 @@
 - Arquivos alterados: editado `src/Api.Tests/Api.Tests.csproj`; criado `.github/workflows/ci-test.yml`; editado `.gitignore`
 - Testes: `dotnet test` local continua verde (22 testes, gate inativo); com cobertura forçada, total atual 21,14% (< 80%) → falha esperada até os testes de integração da Fase 5 cobrirem a camada Api
 - ADR relacionado: nenhum
+
+## 2026-08-29 — Deep Copilot (ADR 0001 — backend em src/backend)
+- Ação: movido o backend para `src/backend/` (Api, Application, Domain, Infrastructure, Api.Tests e Dindin.slnx), espelhando `src/frontend/`; ADR criado em `docs/adr/0001-backend-sob-src-backend.md`
+- Motivo: pedido do usuário — a raiz de `src/` misturava backend e frontend, organização confusa
+- Arquivos alterados: movidos projetos para `src/backend/`; atualizados `docker-compose.yml`, `.github/workflows/ci-lint.yml`, `.github/workflows/ci-test.yml`, `docs/AGENTS.md`, `README.md`, `docs/API_DEV_CHECKLIST.md`; criado `docs/adr/0001-backend-sob-src-backend.md`
+- Testes: build 0 erros/0 avisos; 22 testes passando; `dotnet format` limpo; `docker compose config` válido
+- ADR relacionado: 0001 (Aceito)

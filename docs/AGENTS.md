@@ -97,7 +97,7 @@ Rodando separadamente em desenvolvimento:
 
 ```bash
 # backend
-cd src/Api && dotnet run
+cd src/backend/Api && dotnet run
 
 # frontend
 cd src/frontend && npm install && npm run dev
