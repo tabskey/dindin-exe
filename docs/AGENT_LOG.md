@@ -78,3 +78,10 @@
 - Arquivos alterados: `Account.cs`, `DomainErrorCode.cs`, `AppDbContext.cs`, `Responses.cs`, `IAccountService.cs`, `AccountService.cs`, `AuditedAccountService.cs`, migração `AddAvatar`, 8 testes novos (serviço + persistência)
 - Testes: 72 passando; `dotnet format` limpo
 - ADR relacionado: nenhum (mudança aditiva de esquema, sem alteração estrutural)
+
+## 2026-08-29 16:14 — Deep Copilot (Fase 4 — Api)
+- Ação: implementados os endpoints da camada Api — `Program.cs` reescrito: DI completa (repositórios, services com decorators de auditoria, `JwtOptions`/`JwtTokenService`), autenticação JWT (`AddAuthentication` + `AddJwtBearer` com validação de issuer/audience/key/lifetime), endpoints com `WithName` + OpenAPI e autorização por dono (`IsOwner`: claim `accountId` do token vs rota); `Api/Auth/` (`JwtTokenService`, `JwtOptions`); seção `Jwt` no `appsettings.json`; avatar ligado aos endpoints (POST multipart com `.DisableAntiforgery()`, GET como stream via `Results.File`)
+- Motivo: fase 4 do checklist — endpoints, JWT, autorização e avatar especificados em `ARCHITECTURE.md` §6-7
+- Arquivos alterados: `Api/Program.cs`, `Api/appsettings.json`, criados `Api/Auth/JwtTokenService.cs` e `Api/Auth/JwtOptions.cs`; `Api.http` atualizado com os fluxos manuais
+- Testes: `dotnet build` 0 erros/0 avisos; 72 testes passando; `dotnet format --verify-no-changes` limpo; fluxo manual verificado via curl (script `verify-fase4.ps1`, depois removido): login JWT, saldo 1050 → crédito 50 → 1100, replay idempotente não duplica (mesmo movement id), débito acima do saldo → 400, chave ausente → 400, histórico paginado, 401 sem token, 403 com token de outra conta, conta criada (201), CPF duplicado → 409, avatar upload 204 / download 200 / > 512 KB → 400
+- ADR relacionado: nenhum (implementação do já especificado em `ARCHITECTURE.md`; checklist atualizado para Fase 5)
