@@ -18,6 +18,14 @@ Todo código gerado ou alterado por um agente deve respeitar:
 - **KISS** — a solução mais simples que resolve o problema. Não adicionar camada, padrão ou dependência "porque pode ser útil depois".
 - **Design patterns já definidos** — usar os padrões já decididos no projeto (Strategy para tipos de movimentação, Decorator para auditoria, Idempotency Filter, Repository específico, Result pattern). Não introduzir novos padrões sem seguir o processo abaixo.
 
+## Fluxo de trabalho — commits e PRs
+
+- Uma mudança grande (ex.: uma fase do `docs/API_DEV_CHECKLIST.md`) vira **um commit**.
+- A cada **1–2 fases grandes**, abrir **um PR** (não commit avulso por pedaço pequeno de uma fase).
+- Só commitar com a verificação verde: `dotnet test` e `dotnet format --verify-no-changes` (backend).
+- Quem faz o commit/PR é o responsável pelo projeto; o agente sinaliza prontidão e entrega a
+  mensagem de commit e o texto do PR.
+
 ## Antes de qualquer mudança estrutural ou drástica
 
 Isso inclui: trocar de banco, trocar de arquitetura, adicionar uma camada nova, adicionar uma dependência

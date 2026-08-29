@@ -1,6 +1,97 @@
 @Api_HostAddress = http://localhost:5041
 
-GET {{Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Login — Ana Teste (conta seed) — guarda o token para os próximos passos
+# @name loginAna
+POST {{Api_HostAddress}}/auth/login
+Content-Type: application/json
 
-###
+{
+  "cpf": "111.111.111-11",
+  "password": "senha123"
+}
+
+### Login — Bruno Teste (para testar 403 com conta alheia)
+# @name loginBruno
+POST {{Api_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "cpf": "222.222.222-22",
+  "password": "senha123"
+}
+
+### Criar conta (Idempotency-Key opcional)
+POST {{Api_HostAddress}}/accounts
+Content-Type: application/json
+Idempotency-Key: create-account-1
+
+{
+  "name": "Novo User",
+  "cpf": "444.444.444-44",
+  "accountType": 0,
+  "password": "senha123"
+}
+
+### Saldo (Ana — seed 1050)
+GET {{Api_HostAddress}}/accounts/1/balance
+Authorization: Bearer {{loginAna.response.body.token}}
+
+### Crédito de 50 (Idempotency-Key obrigatória)
+POST {{Api_HostAddress}}/accounts/1/movements
+Authorization: Bearer {{loginAna.response.body.token}}
+Content-Type: application/json
+Idempotency-Key: movement-1
+
+{
+  "type": 0,
+  "amount": 50
+}
+
+### Replay da mesma chave — deve repetir a resposta, sem duplicar
+POST {{Api_HostAddress}}/accounts/1/movements
+Authorization: Bearer {{loginAna.response.body.token}}
+Content-Type: application/json
+Idempotency-Key: movement-1
+
+{
+  "type": 0,
+  "amount": 50
+}
+
+### Débito acima do saldo — deve falhar com 400
+POST {{Api_HostAddress}}/accounts/1/movements
+Authorization: Bearer {{loginAna.response.body.token}}
+Content-Type: application/json
+Idempotency-Key: movement-2
+
+{
+  "type": 1,
+  "amount": 999999
+}
+
+### Histórico paginado
+GET {{Api_HostAddress}}/accounts/1/movements?page=1&pageSize=3
+Authorization: Bearer {{loginAna.response.body.token}}
+
+### Upload de avatar (multipart) — requer um arquivo avatar.png ao lado deste .http
+POST {{Api_HostAddress}}/accounts/1/avatar
+Authorization: Bearer {{loginAna.response.body.token}}
+Content-Type: multipart/form-data; boundary=----dindin-boundary
+
+------dindin-boundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+< avatar.png
+------dindin-boundary--
+
+### Download do avatar (stream)
+GET {{Api_HostAddress}}/accounts/1/avatar
+Authorization: Bearer {{loginAna.response.body.token}}
+
+### Sem token — deve falhar com 401
+GET {{Api_HostAddress}}/accounts/1/balance
+
+### Token de outra conta (Bruno na conta da Ana) — deve falhar com 403
+GET {{Api_HostAddress}}/accounts/1/balance
+Authorization: Bearer {{loginBruno.response.body.token}}
