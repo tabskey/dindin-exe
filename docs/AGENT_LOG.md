@@ -13,3 +13,24 @@
 - Arquivos alterados: `README.md`
 - Testes: nenhum (documentação)
 - ADR relacionado: nenhum
+
+## 2026-08-29 — Deep Copilot
+- Ação: criado `docs/API_DEV_CHECKLIST.md` para controle das etapas de desenvolvimento da API
+- Motivo: pedido do usuário — checklist em .md para acompanhar cada fase da implementação
+- Arquivos alterados: criado `docs/API_DEV_CHECKLIST.md`
+- Testes: nenhum (documentação)
+- ADR relacionado: nenhum
+
+## 2026-08-29 — Deep Copilot (Fase 0 — Estrutura da solução)
+- Ação: criado `src/Dindin.slnx`, projetos `Domain`, `Application`, `Infrastructure`, `Api.Tests`; referências entre projetos; pacotes EF Core Sqlite, JwtBearer, BCrypt.Net-Next, Mvc.Testing; removidos arquivos placeholder dos templates
+- Motivo: fase 0 do checklist — estrutura da solução antes do desenvolvimento do domínio
+- Arquivos alterados: criados `src/Dindin.slnx`, `src/Domain`, `src/Application`, `src/Infrastructure`, `src/Api.Tests`; editados csproj de `src/Api`, `src/Infrastructure`, `src/Api.Tests`
+- Testes: `dotnet build src/Dindin.slnx` — 0 erros, 0 avisos
+- ADR relacionado: nenhum
+
+## 2026-08-29 — Deep Copilot (Fase 1 — Domain)
+- Ação: implementado o domínio — entidades (`Account` com `RowVersion`, `Movement`, `AuditLog`, `IdempotencyRecord`), enums (`AccountType`, `MovementType`), Result pattern (`Result`/`Result<T>`, `DomainError`), strategies de movimentação (`CreditStrategy`, `DebitStrategy`) com a regra de saldo negativo e factory `MovementStrategies`
+- Motivo: fase 1 do checklist — regras de negócio antes das camadas externas
+- Arquivos alterados: criados 13 arquivos em `src/Domain/` e 7 arquivos de teste em `src/Api.Tests/Domain/`
+- Testes: 22 testes unitários passando; cobertura do Domain 97,36% (meta ≥ 80%); `dotnet format --verify-no-changes` limpo
+- ADR relacionado: nenhum
