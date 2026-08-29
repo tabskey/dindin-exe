@@ -61,8 +61,10 @@ public class PersistenceTests : IDisposable
 
         Assert.Equal(3, await db.Accounts.CountAsync());
         Assert.Equal(8, await db.Movements.CountAsync());
-        var applied = (await db.Database.GetAppliedMigrationsAsync()).Single();
-        Assert.EndsWith("_InitialCreate", applied);
+        var applied = await db.Database.GetAppliedMigrationsAsync();
+        Assert.Equal(2, applied.Count());
+        Assert.Contains(applied, m => m.EndsWith("_InitialCreate"));
+        Assert.Contains(applied, m => m.EndsWith("_AddAvatar"));
     }
 
     [Fact]
@@ -198,5 +200,21 @@ public class PersistenceTests : IDisposable
         await repository.SaveChangesAsync();
 
         Assert.Equal(1, await db.AuditLogs.CountAsync());
+    }
+
+    [Fact]
+    public async Task Avatar_PersistsAndReloads()
+    {
+        await using var db = CreateContext();
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        db.Accounts.Add(account);
+        await db.SaveChangesAsync();
+
+        account.SetAvatar(new byte[] { 1, 2, 3 }, "image/jpeg");
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Accounts.AsNoTracking().SingleAsync(a => a.Id == account.Id);
+        Assert.Equal(new byte[] { 1, 2, 3 }, reloaded.Avatar);
+        Assert.Equal("image/jpeg", reloaded.AvatarContentType);
     }
 }

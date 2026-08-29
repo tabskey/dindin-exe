@@ -107,4 +107,84 @@ public class AccountServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCode.AccountNotFound, result.Error?.Code);
     }
+
+    [Fact]
+    public async Task UpdateAvatarAsync_WithValidImage_SavesAvatar()
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        account.SetId(1);
+        _accounts.Accounts.Add(account);
+        var avatar = new byte[100];
+
+        var result = await _service.UpdateAvatarAsync(1, avatar, "image/png");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(avatar, account.Avatar);
+        Assert.Equal("image/png", account.AvatarContentType);
+    }
+
+    [Theory]
+    [InlineData("text/plain")]
+    [InlineData("image/gif")]
+    public async Task UpdateAvatarAsync_WithUnsupportedContentType_Fails(string contentType)
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        account.SetId(1);
+        _accounts.Accounts.Add(account);
+
+        var result = await _service.UpdateAvatarAsync(1, new byte[10], contentType);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InvalidAvatar, result.Error?.Code);
+    }
+
+    [Fact]
+    public async Task UpdateAvatarAsync_WithOversizedImage_Fails()
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        account.SetId(1);
+        _accounts.Accounts.Add(account);
+
+        var result = await _service.UpdateAvatarAsync(1, new byte[512 * 1024 + 1], "image/jpeg");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InvalidAvatar, result.Error?.Code);
+    }
+
+    [Fact]
+    public async Task UpdateAvatarAsync_WithUnknownAccount_Fails()
+    {
+        var result = await _service.UpdateAvatarAsync(999, new byte[10], "image/png");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.AccountNotFound, result.Error?.Code);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_ReturnsStoredAvatar()
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        account.SetId(1);
+        account.SetAvatar(new byte[] { 1, 2, 3 }, "image/webp");
+        _accounts.Accounts.Add(account);
+
+        var result = await _service.GetAvatarAsync(1);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new byte[] { 1, 2, 3 }, result.Value!.Data);
+        Assert.Equal("image/webp", result.Value.ContentType);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_WhenAccountHasNoAvatar_Fails()
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+        account.SetId(1);
+        _accounts.Accounts.Add(account);
+
+        var result = await _service.GetAvatarAsync(1);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.AvatarNotFound, result.Error?.Code);
+    }
 }
