@@ -68,6 +68,13 @@
 ## 2026-08-29 — Deep Copilot (Seed inicial + migração)
 - Ação: criada a migração EF Core `InitialCreate` (schema) — pacote Design no Infrastructure, `DesignTimeDbContextFactory`, tool local `dotnet-ef` (`dotnet-tools.json` na raiz); serial da conta mudou para o formato `00xxx-xx`; `DbInitializer` agora faz `Migrate()` + `Seed()` com 3 contas (Ana/Bruno/Carlos Teste — CPF `xxx.xxx.xxx-xx`, senha `senha123`) e 8 movimentações com saldos consistentes (aplicadas pelas strategies do domínio; Carlos zera o saldo como caso de borda — negativo nunca)
 - Motivo: pedido do usuário — dados iniciais com movimentações para testes e checagem da regra de saldo negativo
-- Arquivos alterados: criados `src/backend/Infrastructure/Migrations/*`, `DesignTimeDbContextFactory.cs`, `.config/dotnet-tools.json`; editados `DbInitializer.cs`, `Domain/Entities/Account.cs`, `PersistenceTests.cs`, `AccountTests.cs`, `Infrastructure.csproj`
+- Arquivos alterados: criados `src/backend/Infrastructure/Migrations/*`, `DesignTimeDbContextFactory.cs`, `dotnet-tools.json`; editados `DbInitializer.cs`, `Domain/Entities/Account.cs`, `PersistenceTests.cs`, `AccountTests.cs`, `Infrastructure.csproj`
 - Testes: 64 passando (novos: formato do serial, seed com movimentações e BCrypt, consistência saldo×movimentações, migração aplicada em SQLite in-memory)
 - ADR relacionado: nenhum (EnsureCreated → Migrate continua dentro da opção "migrations/EnsureCreated" do ARCHITECTURE.md)
+
+## 2026-08-29 — Deep Copilot (Avatar)
+- Ação: adicionado avatar ao modelo de conta — colunas `Avatar` (BLOB) e `AvatarContentType` (TEXT) nullable em `Account` (migração `AddAvatar`; linhas existentes intactas), `Account.SetAvatar`, `UpdateAvatarAsync`/`GetAvatarAsync` no `AccountService` (validação: JPEG/PNG/WebP e máx. 512 KB; códigos `InvalidAvatar`/`AvatarNotFound`) e `AvatarDto`; endpoints ficam para a Fase 4
+- Motivo: pedido do usuário — usuários com foto; SQLite suporta BLOB; limite de 512 KB confirmado
+- Arquivos alterados: `Account.cs`, `DomainErrorCode.cs`, `AppDbContext.cs`, `Responses.cs`, `IAccountService.cs`, `AccountService.cs`, `AuditedAccountService.cs`, migração `AddAvatar`, 8 testes novos (serviço + persistência)
+- Testes: 72 passando; `dotnet format` limpo
+- ADR relacionado: nenhum (mudança aditiva de esquema, sem alteração estrutural)

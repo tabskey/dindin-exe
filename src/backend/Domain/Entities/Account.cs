@@ -14,6 +14,8 @@ public class Account
     public decimal Balance { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
+    public byte[]? Avatar { get; private set; }
+    public string? AvatarContentType { get; private set; }
 
     private Account() { } // EF Core
 
@@ -35,6 +37,12 @@ public class Account
     internal void SetId(long id) => Id = id;
 
     internal void SetBalance(decimal balance) => Balance = balance;
+
+    public void SetAvatar(byte[] avatar, string contentType)
+    {
+        Avatar = avatar;
+        AvatarContentType = contentType;
+    }
 
     // Formato serial: 00xxx-xx (ex.: 00123-45).
     private static string GenerateAccountNumber() =>
