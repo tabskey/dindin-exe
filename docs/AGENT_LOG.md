@@ -34,3 +34,10 @@
 - Arquivos alterados: criados 13 arquivos em `src/Domain/` e 7 arquivos de teste em `src/Api.Tests/Domain/`
 - Testes: 22 testes unitários passando; cobertura do Domain 97,36% (meta ≥ 80%); `dotnet format --verify-no-changes` limpo
 - ADR relacionado: nenhum
+
+## 2026-08-29 — Deep Copilot (CI — gate de cobertura)
+- Ação: adicionado gate de cobertura de 80% no CI — `coverlet.msbuild` no `Api.Tests.csproj` (ativado quando `CI=true`, medindo apenas as assemblies da solução) e novo workflow `.github/workflows/ci-test.yml`; `.gitignore` ignora relatórios de cobertura
+- Motivo: pedido do usuário — meta de cobertura ≥ 80% de linhas verificada automaticamente no CI
+- Arquivos alterados: editado `src/Api.Tests/Api.Tests.csproj`; criado `.github/workflows/ci-test.yml`; editado `.gitignore`
+- Testes: `dotnet test` local continua verde (22 testes, gate inativo); com cobertura forçada, total atual 21,14% (< 80%) → falha esperada até os testes de integração da Fase 5 cobrirem a camada Api
+- ADR relacionado: nenhum

@@ -51,6 +51,10 @@ CodeCoverage/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+# Coverlet coverage reports
+coverage*.xml
+coverage*.json
+
 # NUnit
 *.VisualState.xml
 TestResult.xml
