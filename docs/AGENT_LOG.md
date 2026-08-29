@@ -85,3 +85,25 @@
 - Arquivos alterados: `Api/Program.cs`, `Api/appsettings.json`, criados `Api/Auth/JwtTokenService.cs` e `Api/Auth/JwtOptions.cs`; `Api.http` atualizado com os fluxos manuais
 - Testes: `dotnet build` 0 erros/0 avisos; 72 testes passando; `dotnet format --verify-no-changes` limpo; fluxo manual verificado via curl (script `verify-fase4.ps1`, depois removido): login JWT, saldo 1050 → crédito 50 → 1100, replay idempotente não duplica (mesmo movement id), débito acima do saldo → 400, chave ausente → 400, histórico paginado, 401 sem token, 403 com token de outra conta, conta criada (201), CPF duplicado → 409, avatar upload 204 / download 200 / > 512 KB → 400
 - ADR relacionado: nenhum (implementação do já especificado em `ARCHITECTURE.md`; checklist atualizado para Fase 5)
+
+## 2026-08-29 16:30 — Deep Copilot (Campo Contraparte)
+- Ação: adicionado `Movement.Counterparty` (label congelado na criação) + `CounterpartyCpf` opcional no
+  `POST /accounts/{id}/movements` — ausente → `AUTO-DEPOSITO {NNN-NN} CC` (depósito na boca do caixa,
+  próprio CPF); informado → resolve a conta por CPF (único) e monta `{NOME} {NNN-NN} CC` (ex.:
+  `JOAO789-09 CC`); CPF inexistente → `CounterpartyNotFound` (400). Formatação em
+  `Domain/Entities/CounterpartyLabel.cs` (maiúsculas sem acento + máscara dos 5 últimos dígitos + sufixo
+  `CC`); migração `AddCounterparty` (coluna nullable); seed com contrapartes de exemplo e Bruno como
+  `Checking` (todas as contas do exercício são correntes)
+- Motivo: pedido do usuário — extrato com contraparte ("Ana recebeu do João +50 → JOAO789-09 CC");
+  mudança de contrato documentada em ADR 0002
+- Arquivos alterados: criados `Domain/Entities/CounterpartyLabel.cs`, migração `AddCounterparty`,
+  `docs/adr/0002-campo-contraparte-em-movimentacoes.md`, `CounterpartyLabelTests.cs`; editados
+  `Domain/Entities/Movement.cs`, `Domain/Results/DomainErrorCode.cs`, `Application/Dtos/Requests.cs`,
+  `Application/Dtos/Responses.cs`, `Application/Services/MovementService.cs`,
+  `Infrastructure/Persistence/AppDbContext.cs`, `Infrastructure/Persistence/DbInitializer.cs`,
+  `Api/Api.http`, `Api.Tests/Application/MovementServiceTests.cs`,
+  `Api.Tests/Infrastructure/PersistenceTests.cs`, `docs/ARCHITECTURE.md`
+- Testes: 80 passando (8 novos: máscara/formatação do label, resolução por CPF, auto-depósito,
+  contraparte inexistente, seed com contrapartes, migração); `dotnet build` 0 erros/0 avisos;
+  `dotnet format` limpo
+- ADR relacionado: 0002 (Aceito)

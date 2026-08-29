@@ -28,7 +28,25 @@ public sealed class MovementService : IMovementService
                 new DomainError(DomainErrorCode.AccountNotFound, "Account not found."));
         }
 
-        var movementResult = Movement.Create(accountId, request.Type, request.Amount);
+        string counterparty;
+        if (string.IsNullOrWhiteSpace(request.CounterpartyCpf))
+        {
+            // Sem contraparte informada: depósito na boca do caixa — o próprio titular.
+            counterparty = CounterpartyLabel.AutoDeposit(account);
+        }
+        else
+        {
+            var counterpartyAccount = await _accounts.GetByCpfAsync(request.CounterpartyCpf.Trim(), cancellationToken);
+            if (counterpartyAccount is null)
+            {
+                return Result<MovementDto>.Failure(
+                    new DomainError(DomainErrorCode.CounterpartyNotFound, "Counterparty account not found."));
+            }
+
+            counterparty = CounterpartyLabel.For(counterpartyAccount);
+        }
+
+        var movementResult = Movement.Create(accountId, request.Type, request.Amount, counterparty);
         if (!movementResult.IsSuccess)
         {
             return Result<MovementDto>.Failure(movementResult.Error!);
@@ -80,5 +98,5 @@ public sealed class MovementService : IMovementService
     }
 
     private static MovementDto ToDto(Movement movement) =>
-        new(movement.Id, movement.AccountId, movement.Type, movement.Amount, movement.Timestamp);
+        new(movement.Id, movement.AccountId, movement.Type, movement.Amount, movement.Timestamp, movement.Counterparty);
 }

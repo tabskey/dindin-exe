@@ -9,5 +9,6 @@ public enum DomainErrorCode
     AvatarNotFound,
     CpfAlreadyRegistered,
     AccountNotFound,
-    InvalidCredentials
+    InvalidCredentials,
+    CounterpartyNotFound
 }
