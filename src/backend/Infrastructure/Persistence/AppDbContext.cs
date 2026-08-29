@@ -35,6 +35,7 @@ public class AppDbContext : DbContext
             movement.HasKey(m => m.Id);
             movement.Property(m => m.Id).ValueGeneratedOnAdd();
             movement.Property(m => m.Amount).HasPrecision(18, 2);
+            movement.Property(m => m.Counterparty).HasMaxLength(120);
             movement.HasIndex(m => m.AccountId);
         });
 
