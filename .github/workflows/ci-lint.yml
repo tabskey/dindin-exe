@@ -28,12 +28,12 @@ jobs:
       # 3. Restaura as dependências do projeto
       - name: Restore dependencies
         run: dotnet restore
-        working-directory: src/Api
+        working-directory: src/backend/Api
 
       # 4. Roda o linter do .NET (formatação + analisadores). Falha se o código não estiver em conformidade
       - name: Run Linter (dotnet format)
         run: dotnet format Api.csproj --verify-no-changes --no-restore
-        working-directory: src/Api
+        working-directory: src/backend/Api
 
   # Lint do frontend (Node.js / ESLint)
   frontend-lint:

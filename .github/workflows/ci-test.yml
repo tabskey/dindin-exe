@@ -1,0 +1,36 @@
+# .github/workflows/ci-test.yml
+name: CI - Test & Coverage
+
+# Quando esse workflow vai rodar:
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+# O que esse workflow vai fazer:
+jobs:
+  # Testes do backend (.NET) com gate de cobertura
+  backend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu repositório
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Configura o .NET SDK (mesma versão do Dockerfile)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # 3. Restaura as dependências da solution
+      - name: Restore dependencies
+        run: dotnet restore src/backend/Dindin.slnx
+
+      # 4. Roda os testes com o gate de cobertura. O GitHub Actions define a variável
+      #    de ambiente CI=true automaticamente, o que ativa a medição e o threshold de
+      #    80% de linhas no Api.Tests.csproj (coverlet). O job falha se ficar abaixo.
+      - name: Run tests with coverage gate
+        run: dotnet test src/backend/Dindin.slnx --no-restore --nologo
