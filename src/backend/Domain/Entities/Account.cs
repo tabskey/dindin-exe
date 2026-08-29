@@ -32,8 +32,11 @@ public class Account
 
     public Result ApplyMovement(IMovementStrategy strategy, decimal amount) => strategy.Apply(this, amount);
 
+    internal void SetId(long id) => Id = id;
+
     internal void SetBalance(decimal balance) => Balance = balance;
 
+    // Formato serial: 00xxx-xx (ex.: 00123-45).
     private static string GenerateAccountNumber() =>
-        $"A{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(1000, 9999)}";
+        $"00{Random.Shared.Next(0, 1000):000}-{Random.Shared.Next(0, 100):00}";
 }

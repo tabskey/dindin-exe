@@ -23,6 +23,14 @@ public class AccountTests
     }
 
     [Fact]
+    public void Create_GeneratesAccountNumberInSerialFormat()
+    {
+        var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
+
+        Assert.Matches(@"^00\d{3}-\d{2}$", account.AccountNumber);
+    }
+
+    [Fact]
     public void Create_GeneratesDistinctAccountNumbers()
     {
         var first = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");

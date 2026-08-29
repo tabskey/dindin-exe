@@ -4,7 +4,7 @@ Controle das etapas de implementação da API (Minimal API .NET 10), seguindo `d
 `docs/ARCHITECTURE.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto com o
 código, em cada fase.
 
-**Fase atual:** Fase 2 — Infrastructure
+**Fase atual:** Fase 4 — Api
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -45,23 +45,28 @@ código, em cada fase.
 - [x] Testes unitários do domínio: regra de saldo negativo + strategies de crédito/débito.
 - [x] Critério: `dotnet test` passando (22 testes) e cobertura do Domain em **97,36%** (meta ≥ 80%).
 
-## Fase 2 — Infrastructure
+## Fase 2 — Infrastructure ✅
 
-- [ ] `AppDbContext` + configurações: CPF único, `RowVersion` como token de concorrência,
-      `IdempotencyRecord` com PK = `Idempotency-Key`, `AuditLog.Payload` como JSON.
-- [ ] Repositórios: `IAccountRepository`, `IMovementRepository` + implementações EF.
-- [ ] Seed: contas de teste Ana Teste e Bruno Teste (CPF/senha do README) com hash BCrypt.
-- [ ] SQLite: connection string em `appsettings.json` e no container.
-- [ ] Critério: `dotnet build` sem erros.
+- [x] `AppDbContext` + configurações: CPF único, `RowVersion` como token de concorrência
+      (`IsConcurrencyToken` + `RowVersionInterceptor` — SQLite não gera rowversion nativo),
+      `IdempotencyRecord` com PK = `Idempotency-Key`, `AuditLog.Payload` como TEXT (JSON).
+- [x] Repositórios: `IAccountRepository`, `IMovementRepository` + implementações EF.
+- [x] Migração EF Core `InitialCreate` (schema; design-time factory + tool local `dotnet-ef` via
+      `.config/dotnet-tools.json`) — app usa `Migrate()` + `Seed()` na inicialização.
+- [x] Seed: contas Ana/Bruno/Carlos Teste (CPF `xxx.xxx.xxx-xx`, senha `senha123`, serial `00xxx-xx`) e
+      8 movimentações com saldos consistentes (inclui caso de borda: Carlos zera o saldo — negativo nunca).
+- [x] SQLite: connection string em `appsettings.json` e no container (`docker-compose.yml`).
+- [x] Critério: `dotnet build` sem erros — 30 testes passando (8 novos de persistência).
 
-## Fase 3 — Application
+## Fase 3 — Application ✅
 
-- [ ] DTOs: create account, login, movement, balance, histórico paginado.
-- [ ] Services: `AccountService` (registro, login, saldo) e `MovementService` (crédito/débito via strategy,
+- [x] DTOs: create account, login, movement, balance, histórico paginado.
+- [x] Services: `AccountService` (registro, login, saldo) e `MovementService` (crédito/débito via strategy,
       com retry em `DbUpdateConcurrencyException`).
-- [ ] Decorators de auditoria: `AuditedAccountService`, `AuditedMovementService` (gravam `AuditLog`).
-- [ ] Idempotency filter (`IEndpointFilter`): opcional em `/accounts`, obrigatório em movimentações.
-- [ ] Critério: `dotnet build` sem erros.
+- [x] Decorators de auditoria: `AuditedAccountService`, `AuditedMovementService` (gravam `AuditLog`).
+- [x] Idempotency filter (`IEndpointFilter`): opcional em `/accounts`, obrigatório em movimentações.
+- [x] Critério: `dotnet build` sem erros — 61 testes passando; cobertura Application 97,51% (total 46,62%
+      com Api ainda em 0%).
 
 ## Fase 4 — Api
 
