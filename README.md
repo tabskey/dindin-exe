@@ -54,7 +54,7 @@ Para desenvolvimento local:
 
 ```bash
 # backend
-cd src/Api
+cd src/backend/Api
 dotnet restore
 dotnet run
 ```
@@ -68,7 +68,7 @@ npm install
 npm run dev
 ```
 
-O backend sobe em `http://localhost:5041`, conforme o perfil `http` definido em `src/Api/Properties/launchSettings.json`.
+O backend sobe em `http://localhost:5041`, conforme o perfil `http` definido em `src/backend/Api/Properties/launchSettings.json`.
 
 O frontend sobe em `http://localhost:5173`.
 
@@ -233,7 +233,12 @@ As motivações das principais decisões técnicas estão documentadas em [`docs
 
 ```text
 src/
-├── Api/                    # Minimal API .NET 10 (starter)
+├── backend/                # Backend .NET (solution + camadas)
+│   ├── Api/                # Minimal API .NET 10
+│   ├── Application/        # Services, DTOs, decorator de auditoria
+│   ├── Domain/             # Entidades, regras de negócio, strategies
+│   ├── Infrastructure/     # EF Core, repositórios, seed
+│   └── Api.Tests/          # Testes unitários e de integração
 └── frontend/               # React 19 + Vite + TypeScript (starter)
 
 docs/
