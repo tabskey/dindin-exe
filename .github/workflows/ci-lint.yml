@@ -1,0 +1,63 @@
+# .github/workflows/ci-lint.yml
+name: CI - Lint
+
+# Quando esse workflow vai rodar:
+on:
+  push:
+    branches: [ "main", "develop" ] # Altere para o nome da sua branch principal, se for diferente
+  pull_request:
+    branches: [ "main", "develop" ]
+
+# O que esse workflow vai fazer:
+jobs:
+  # Lint do backend (.NET)
+  backend-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu repositório
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Configura o .NET SDK (mesma versão do Dockerfile)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # 3. Restaura as dependências do projeto
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: src/Api
+
+      # 4. Roda o linter do .NET (formatação + analisadores). Falha se o código não estiver em conformidade
+      - name: Run Linter (dotnet format)
+        run: dotnet format Api.csproj --verify-no-changes --no-restore
+        working-directory: src/Api
+
+  # Lint do frontend (Node.js / ESLint)
+  frontend-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu repositório
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Configura a versão do Node.js (mesma do Dockerfile), com cache para ser mais rápido
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x # Mesma versão usada no Dockerfile (node:24-alpine)
+          cache: 'npm'
+          cache-dependency-path: src/frontend/package-lock.json
+
+      # 3. Instala as dependências (usa o ci pra ser mais rápido e confiável)
+      - name: Install dependencies
+        run: npm ci
+        working-directory: src/frontend
+
+      # 4. Roda o linter
+      - name: Run Linter
+        run: npm run lint
+        working-directory: src/frontend

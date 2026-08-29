@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: ./src/Api
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+
+  frontend:
+    build:
+      context: ./src/frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
