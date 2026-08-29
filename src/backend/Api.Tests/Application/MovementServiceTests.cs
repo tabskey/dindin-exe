@@ -87,6 +87,44 @@ public class MovementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WithCounterpartyCpf_SetsCounterpartyLabel()
+    {
+        AddAccount(1, 0);
+        var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
+        joao.SetId(2);
+        _accounts.Accounts.Add(joao);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 100, "222.222.222-22"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("JOAO TESTE 222-22 CC", result.Value!.Counterparty);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutCounterpartyCpf_UsesAutoDepositLabel()
+    {
+        AddAccount(1, 0);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 100));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("AUTO-DEPOSITO 111-11 CC", result.Value!.Counterparty);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithUnknownCounterpartyCpf_FailsAndKeepsBalance()
+    {
+        var account = AddAccount(1, 100);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 50, "999.999.999-99"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.CounterpartyNotFound, result.Error?.Code);
+        Assert.Equal(100, account.Balance);
+        Assert.Empty(_movements.Movements);
+    }
+
+    [Fact]
     public async Task CreateAsync_OnConcurrencyConflict_ReloadsAndRetries()
     {
         var account = AddAccount(1, 100);

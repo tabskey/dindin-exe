@@ -36,7 +36,8 @@ Idempotency-Key: create-account-1
 GET {{Api_HostAddress}}/accounts/1/balance
 Authorization: Bearer {{loginAna.response.body.token}}
 
-### Crédito de 50 (Idempotency-Key obrigatória)
+### Crédito de 50 vindo do Bruno (Idempotency-Key obrigatória;
+### CounterpartyCpf opcional — ausente vira "AUTO-DEPOSITO {NNN-NN} CC")
 POST {{Api_HostAddress}}/accounts/1/movements
 Authorization: Bearer {{loginAna.response.body.token}}
 Content-Type: application/json
@@ -44,7 +45,8 @@ Idempotency-Key: movement-1
 
 {
   "type": 0,
-  "amount": 50
+  "amount": 50,
+  "counterpartyCpf": "222.222.222-22"
 }
 
 ### Replay da mesma chave — deve repetir a resposta, sem duplicar
@@ -55,7 +57,19 @@ Idempotency-Key: movement-1
 
 {
   "type": 0,
-  "amount": 50
+  "amount": 50,
+  "counterpartyCpf": "222.222.222-22"
+}
+
+### Crédito em espécie na boca do caixa — sem CounterpartyCpf
+POST {{Api_HostAddress}}/accounts/1/movements
+Authorization: Bearer {{loginAna.response.body.token}}
+Content-Type: application/json
+Idempotency-Key: movement-cash
+
+{
+  "type": 0,
+  "amount": 25
 }
 
 ### Débito acima do saldo — deve falhar com 400
