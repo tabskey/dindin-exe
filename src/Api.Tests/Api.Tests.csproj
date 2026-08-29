@@ -7,8 +7,24 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!-- Ativado apenas no CI (GitHub Actions define CI=true): mede a cobertura das
+       assemblies da solução e falha se a cobertura de linhas ficar abaixo de 80%. -->
+  <PropertyGroup>
+    <CollectCoverage Condition="'$(CI)' == 'true'">true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <Threshold>80</Threshold>
+    <ThresholdType>line</ThresholdType>
+    <ThresholdStat>total</ThresholdStat>
+    <Include>[Domain]*,[Application]*,[Infrastructure]*,[Api]*</Include>
+    <Exclude>[Api.Tests]*</Exclude>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="coverlet.msbuild" Version="10.0.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
