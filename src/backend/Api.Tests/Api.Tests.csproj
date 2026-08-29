@@ -7,6 +7,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <!-- Ativado apenas no CI (GitHub Actions define CI=true): mede a cobertura das
        assemblies da solução e falha se a cobertura de linhas ficar abaixo de 80%. -->
   <PropertyGroup>
