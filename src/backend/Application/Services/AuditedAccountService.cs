@@ -37,4 +37,10 @@ public sealed class AuditedAccountService : IAccountService
 
     public Task<Result<BalanceDto>> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default) =>
         _inner.GetBalanceAsync(accountId, cancellationToken);
+
+    public Task<Result> UpdateAvatarAsync(long accountId, byte[] avatar, string contentType, CancellationToken cancellationToken = default) =>
+        _inner.UpdateAvatarAsync(accountId, avatar, contentType, cancellationToken);
+
+    public Task<Result<AvatarDto>> GetAvatarAsync(long accountId, CancellationToken cancellationToken = default) =>
+        _inner.GetAvatarAsync(accountId, cancellationToken);
 }

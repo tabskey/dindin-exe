@@ -9,6 +9,12 @@ namespace Application.Services;
 public sealed class AccountService : IAccountService
 {
     private const int MinPasswordLength = 6;
+    private const int MaxAvatarBytes = 512 * 1024;
+    private static readonly HashSet<string> AllowedAvatarContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/png", "image/webp"
+    };
+
     private readonly IAccountRepository _accounts;
 
     public AccountService(IAccountRepository accounts) => _accounts = accounts;
@@ -57,6 +63,42 @@ public sealed class AccountService : IAccountService
         }
 
         return Result<BalanceDto>.Success(new BalanceDto(account.Id, account.Balance));
+    }
+
+    public async Task<Result> UpdateAvatarAsync(long accountId, byte[] avatar, string contentType, CancellationToken cancellationToken = default)
+    {
+        var account = await _accounts.GetByIdAsync(accountId, cancellationToken);
+        if (account is null)
+        {
+            return Result.Failure(new DomainError(DomainErrorCode.AccountNotFound, "Account not found."));
+        }
+
+        if (avatar.Length == 0 || avatar.Length > MaxAvatarBytes || !AllowedAvatarContentTypes.Contains(contentType))
+        {
+            return Result.Failure(new DomainError(
+                DomainErrorCode.InvalidAvatar,
+                $"Avatar must be a JPEG, PNG or WebP image up to {MaxAvatarBytes / 1024} KB."));
+        }
+
+        account.SetAvatar(avatar, contentType);
+        await _accounts.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result<AvatarDto>> GetAvatarAsync(long accountId, CancellationToken cancellationToken = default)
+    {
+        var account = await _accounts.GetByIdAsync(accountId, cancellationToken);
+        if (account is null)
+        {
+            return Result<AvatarDto>.Failure(new DomainError(DomainErrorCode.AccountNotFound, "Account not found."));
+        }
+
+        if (account.Avatar is null || account.AvatarContentType is null)
+        {
+            return Result<AvatarDto>.Failure(new DomainError(DomainErrorCode.AvatarNotFound, "This account has no avatar."));
+        }
+
+        return Result<AvatarDto>.Success(new AvatarDto(account.Avatar, account.AvatarContentType));
     }
 
     private static AccountDto ToDto(Account account) =>
