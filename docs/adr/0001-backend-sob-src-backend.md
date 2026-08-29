@@ -3,12 +3,14 @@
 Status: Aceito
 
 ## Contexto
+
 O repositório tem o frontend isolado em `src/frontend`, mas os projetos do backend estavam soltos na raiz
 de `src/` (`Api`, `Application`, `Domain`, `Infrastructure`, `Api.Tests`, `Dindin.slnx`). O usuário
 considerou essa organização confusa e pediu para agrupar o backend em uma pasta própria, no mesmo estilo
 do frontend.
 
 ## Alternativas consideradas
+
 - Manter como está — seguia a árvore original de `ARCHITECTURE.md`, mas deixava `src/` misturando dois
   domínios (backend e frontend).
 - Agrupar tudo sob `src/Api/` — centralizava o backend, mas misturava as camadas de arquitetura
@@ -18,12 +20,10 @@ do frontend.
   as fronteiras entre os projetos das camadas.
 
 ## Decisão
+
 Criar a pasta `src/backend/` e mover para ela os projetos `Api`, `Application`, `Domain`, `Infrastructure`,
 `Api.Tests` e a solution `Dindin.slnx`. As referências entre projetos são relativas e continuam válidas.
 Atualizar os caminhos em `docker-compose.yml`, workflows do GitHub Actions, `AGENTS.md`, `README.md` e
 `ARCHITECTURE.md`.
 
 ## Consequências
-- Navegação mais clara: `src/backend/` para tudo do .NET e `src/frontend/` para o React.
-- `ARCHITECTURE.md` atualizado para refletir a nova árvore (fonte de verdade viva).
-- Caminhos em CI, Docker e documentação ajustados; nenhuma mudança de código ou contrato.
