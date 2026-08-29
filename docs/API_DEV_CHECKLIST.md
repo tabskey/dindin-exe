@@ -70,12 +70,12 @@ código, em cada fase.
 
 ## Fase 4 — Api
 
-- [ ] JWT: login confere senha (BCrypt) e devolve token simples (sem refresh/roles).
-- [ ] Endpoints documentados + autorização: a conta só acessa os próprios dados (accountId do token vs rota).
-- [ ] Avatar: `POST /accounts/{id}/avatar` (multipart, máx. 512 KB, JPEG/PNG/WebP) e
+- [x] JWT: login confere senha (BCrypt) e devolve token simples (sem refresh/roles).
+- [x] Endpoints documentados + autorização: a conta só acessa os próprios dados (accountId do token vs rota).
+- [x] Avatar: `POST /accounts/{id}/avatar` (multipart, máx. 512 KB, JPEG/PNG/WebP) e
       `GET /accounts/{id}/avatar` (stream) — sem idempotency filter.
-- [ ] DI e organização dos endpoints (Program.cs).
-- [ ] Critério: fluxo manual via `Api.http` / curl funcionando localmente.
+- [x] DI e organização dos endpoints (Program.cs).
+- [x] Critério: fluxo manual via `Api.http` / curl funcionando localmente.
 
 ## Fase 5 — Testes de integração
 
