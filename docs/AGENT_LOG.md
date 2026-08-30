@@ -107,3 +107,24 @@
   contraparte inexistente, seed com contrapartes, migração); `dotnet build` 0 erros/0 avisos;
   `dotnet format` limpo
 - ADR relacionado: 0002 (Aceito)
+
+## 2026-08-30 20:35 — Deep Copilot (Fase 5 — Testes de integração)
+- Ação: testes de integração com `WebApplicationFactory<Program>` (classe `Program` exposta via
+  `public partial class`); fixture `ApiFactory` com SQLite em arquivo temporário
+  (`Pooling=False`; em-memory compartilha uma única conexão e não suporta requisições concorrentes) e
+  interceptor de `PRAGMA busy_timeout` para os débitos paralelos; 22 testes novos: fluxo completo
+  (criar conta → login → movimentação → saldo → histórico), contraparte (CPF → label, ausente →
+  auto-depósito, inexistente → 400), débito acima do saldo, idempotência (replay não duplica),
+  paginação (page/pageSize clamps), 401/403/404, avatar (upload 204/download 200/type inválido,
+  >512 KB e ausente → 400/404) e concorrência (5 débitos paralelos de 80 em saldo 100 → exatamente
+  1 sucesso, saldo 20, nunca negativo)
+- Motivo: fase 5 do checklist + esteira (CI) falhando no gate de cobertura — Api estava com 0% de
+  cobertura e o total em 65,74% < 80%
+- Arquivos alterados: `Api/Program.cs` (partial class), criados `Api.Tests/Integration/` (`ApiFactory.cs`,
+  `AccountFlowTests.cs`, `MovementEndpointTests.cs`, `AccessControlTests.cs`, `ConcurrencyTests.cs`),
+  `Api.Tests/Api.Tests.csproj` (exclui código gerado do OpenAPI do cálculo de cobertura)
+- Testes: 102 passando (80 unitários + 22 integração); cobertura total 97,1% (Api 96% com o código
+  gerado pelo `AddOpenApi` excluído — as 384 linhas do source generator não são código do projeto);
+  `dotnet build` 0 erros/0 avisos; `dotnet format` limpo; gate de 80% verde via
+  `-p:CollectCoverage=true -p:Threshold=80` (equivalente ao CI=true do GitHub Actions)
+- ADR relacionado: nenhum; checklist atualizado para Fase 6

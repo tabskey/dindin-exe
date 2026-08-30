@@ -20,7 +20,9 @@
     <ThresholdType>line</ThresholdType>
     <ThresholdStat>total</ThresholdStat>
     <Include>[Domain]*,[Application]*,[Infrastructure]*,[Api]*</Include>
-    <Exclude>[Api.Tests]*</Exclude>
+    <!-- Código gerado pelo source generator do Microsoft.AspNetCore.OpenApi (suporte a
+         comentários XML no documento OpenAPI): não é código do projeto e não conta para o gate. -->
+    <Exclude>[Api.Tests]*,[Api]*OpenApiXmlCommentSupport_generated*</Exclude>
   </PropertyGroup>
 
   <ItemGroup>

@@ -192,3 +192,6 @@ static IResult ToErrorResult(DomainError error) => error.Code switch
 app.Run();
 
 record LoginResponse(string Token, AccountDto Account);
+
+// Expõe a classe Program para os testes de integração (WebApplicationFactory<Program>).
+public partial class Program { }

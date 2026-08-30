@@ -4,7 +4,7 @@ Controle das etapas de implementação da API (Minimal API .NET 10), seguindo `d
 `docs/ARCHITECTURE.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto com o
 código, em cada fase.
 
-**Fase atual:** Fase 4 — Api
+**Fase atual:** Fase 6 — Docker e documentação
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -79,11 +79,13 @@ código, em cada fase.
 
 ## Fase 5 — Testes de integração
 
-- [ ] `WebApplicationFactory` + SQLite in-memory: fluxos completos (criar conta → login → movimentação →
-      saldo → histórico).
-- [ ] Idempotência: segunda chamada com a mesma chave não duplica.
-- [ ] Concorrência: débitos concorrentes nunca geram saldo negativo.
-- [ ] Critério: `dotnet test` 100% verde e cobertura geral ≥ 80%.
+- [x] `WebApplicationFactory` + SQLite (arquivo temporário; em-memory usa uma única conexão e não
+      suporta requisições concorrentes): fluxos completos (criar conta → login → movimentação → saldo →
+      histórico).
+- [x] Idempotência: segunda chamada com a mesma chave não duplica.
+- [x] Concorrência: débitos concorrentes nunca geram saldo negativo.
+- [x] Critério: `dotnet test` 100% verde (102 testes) e cobertura geral 97,1% ≥ 80%
+      (código gerado pelo OpenAPI excluído do cálculo).
 
 ## Fase 6 — Docker e documentação
 
