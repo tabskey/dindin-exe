@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { CreateAccountModal } from '../components/CreateAccountModal'
 import { useAuth } from '../context/auth'
 import { maskCpf } from '../lib/masks'
+import coinArt from '../assets/coin-art.svg'
+import '../assets/login-coin.css'
+import '../assets/login-pixel-bg.css'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -36,12 +39,25 @@ export function LoginPage() {
     'mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40'
 
   return (
-    <main className="flex min-h-svh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-xl shadow-black/25">
-        <header className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground">DinDin.exe</h1>
-          <p className="mt-1 text-sm text-muted">Acesse sua conta</p>
-        </header>
+    <main className="pixel-bg flex min-h-svh items-center justify-center px-4">
+      <div className="relative flex w-full max-w-sm flex-col items-center">
+        <div className="login-coin-wrap" aria-label="Moeda girando do DinDin.EXE">
+          <div className="login-coin-stage">
+            <div className="login-coin-spin">
+              <img src={coinArt} alt="" className="login-coin-image" />
+              <div className="login-coin-shine" aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-xl shadow-black/25">
+          <header className="mb-8 text-center">
+            <h1 className="brand-title" aria-label="DinDin.EXE">
+              <span>DinDin</span>
+              <span className="brand-exe">.EXE</span>
+            </h1>
+            <p className="mt-1 text-sm text-muted">Acesse sua conta</p>
+          </header>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
@@ -105,12 +121,13 @@ export function LoginPage() {
           Contas de teste: 111.111.111-11 · senha123
         </p>
       </div>
+    </div>
 
-      <CreateAccountModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={(newCpf) => setCpf(newCpf)}
-      />
+    <CreateAccountModal
+      open={createOpen}
+      onClose={() => setCreateOpen(false)}
+      onCreated={(newCpf) => setCpf(newCpf)}
+    />
     </main>
   )
 }

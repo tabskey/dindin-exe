@@ -50,8 +50,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-lg">
-        <h2 className="mb-4 text-lg font-bold text-foreground">{title}</h2>
+      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-14 shadow-lg">
+        <h2 className="mb-4 text-center font-['Bree_Serif',serif] text-3xl text-foreground sm:text-4xl">{title}</h2>
         {children}
       </div>
     </div>,

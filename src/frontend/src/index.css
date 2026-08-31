@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Bree+Serif&display=swap');
 @import "tailwindcss";
 
 /* Dark mode por classe: a classe `.dark` no <html> é controlada pelo hook useTheme
@@ -21,6 +22,9 @@
   --income: #4c9a5f;
   --expense-bg: #fbe4dc;
   --expense: #cf5b2f;
+  --background-login: linear-gradient(135deg, #fffdf7 0%, #fff5e4 55%, #ffefd0 100%);
+  --background-pixel: rgba(255, 177, 43, 0.12);
+  --background-pixel-strong: rgba(255, 177, 43, 0.18);
   color-scheme: light;
 }
 
@@ -37,6 +41,9 @@
   --income: #4caf60;
   --expense-bg: #3d2119;
   --expense: #cf5b2f;
+  --background-login: linear-gradient(135deg, #17130f 0%, #251e16 45%, #3b2f1d 100%);
+  --background-pixel: rgba(255, 177, 43, 0.07);
+  --background-pixel-strong: rgba(255, 177, 43, 0.12);
   color-scheme: dark;
 }
 
@@ -53,6 +60,103 @@
   --color-income: var(--income);
   --color-expense-bg: var(--expense-bg);
   --color-expense: var(--expense);
+}
+
+@layer components {
+  .brand-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.15em;
+    margin: 0;
+    font-family: 'Bree Serif', serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--foreground);
+  }
+
+  .brand-exe {
+    position: relative;
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.45em;
+    letter-spacing: 1px;
+    color: var(--accent);
+    text-shadow: 0 0 18px rgba(255, 177, 43, 0.45);
+    animation: brand-shake 3s infinite steps(1, end);
+  }
+
+  .brand-exe::after {
+    --slice-1: inset(80% -6px 0 0);
+    --slice-2: inset(50% -6px 30% 0);
+    --slice-3: inset(10% -6px 85% 0);
+    --slice-4: inset(40% -6px 43% 0);
+    --slice-5: inset(80% -6px 5% 0);
+    content: '.EXE';
+    position: absolute;
+    inset: 0;
+    color: var(--accent);
+    text-shadow: -3px -3px 0px #ff2079, 3px 3px 0px #00fff9;
+    clip-path: var(--slice-1);
+    opacity: 0;
+    animation: brand-glitch 3s infinite steps(1, end);
+  }
+
+  @keyframes brand-shake {
+    0% { transform: translate(-4px, -2px); }
+    1.5% { transform: translate(3px, 2px); }
+    3% { transform: translate(-3px, 2px); }
+    4.5% { transform: translate(2px, 0); }
+    6% { transform: translate(2px, 2px); }
+    7% { transform: translate(5px, -2px); }
+    8% { transform: translate(0, 0); }
+    100% { transform: translate(0, 0); }
+  }
+
+  @keyframes brand-glitch {
+    0% {
+      opacity: 1;
+      clip-path: var(--slice-1);
+      transform: translate(-20px, -10px);
+    }
+    1.5% {
+      opacity: 1;
+      clip-path: var(--slice-3);
+      transform: translate(10px, 10px);
+    }
+    3% {
+      opacity: 1;
+      clip-path: var(--slice-1);
+      transform: translate(-10px, 10px);
+    }
+    4.5% {
+      opacity: 1;
+      clip-path: var(--slice-2);
+      transform: translate(5px, 0px);
+    }
+    6% {
+      opacity: 1;
+      clip-path: var(--slice-4);
+      transform: translate(5px, 10px);
+    }
+    7% {
+      opacity: 1;
+      clip-path: var(--slice-5);
+      transform: translate(20px, -10px);
+    }
+    8% {
+      opacity: 0;
+      clip-path: var(--slice-1);
+      transform: translate(0);
+    }
+    100% {
+      opacity: 0;
+      clip-path: var(--slice-1);
+      transform: translate(0);
+    }
+  }
 }
 
 @layer base {
