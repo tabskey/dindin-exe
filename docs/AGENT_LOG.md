@@ -205,3 +205,48 @@
   (fix warning CS8602 — `movement!` na linha 71; build voltou a 0 avisos)
 - Testes: 106 passando; build 0 erros/0 avisos
 - ADR relacionado: nenhum (ajuste pontual de documentação + fix de warning em teste)
+
+## 2026-08-31 — Deep Copilot (Frontend: login + tema claro/escuro)
+- Ação: frontend saiu do starter — Tailwind CSS v4 via plugin `@tailwindcss/vite`; sistema de tema
+  light/dark por classe (`.dark` no `<html>`) com tokens de cor em CSS variables (`:root`/`.dark`) mapeados
+  no `@theme inline` (trocar a paleta final = editar só as variáveis); hook `useTheme` (persistência em
+  `localStorage` `dindin-theme`, padrão = `prefers-color-scheme`) + script anti-FOUC no `index.html`;
+  `ThemeToggle` (sol/lua, acessível) e página de login (`LoginPage`: CPF + senha + botão Entrar, com
+  dica das contas de seed); `index.html` em pt-BR com título "DinDin.exe — Entrar"; removidos arquivos do
+  starter (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`)
+- Motivo: pedido do usuário — começar o frontend com Tailwind, página de login inicial e comportamento
+  light/dark; paleta final será passada depois
+- Arquivos alterados: `src/frontend/` — `package.json`/`package-lock.json` (tailwindcss,
+  @tailwindcss/vite), `vite.config.ts`, `src/index.css`, criados `src/hooks/useTheme.ts`,
+  `src/components/ThemeToggle.tsx`, `src/pages/LoginPage.tsx`; reescritos `src/App.tsx`, `index.html`;
+  removidos `src/App.css`, `src/assets/*`, `public/icons.svg`; `README.md` (status atual)
+- Testes: `npm run build` (tsc -b + vite build) e `npm run lint` — pendentes nesta entrada
+- ADR relacionado: nenhum (implementação de tela já prevista no README como próximo passo)
+
+## 2026-08-31 — Deep Copilot (Correções pós-revisão do frontend)
+- Ação: (1) proxy do Vite para a API via porta do Docker — `/api` → `http://localhost` (nginx em :80 já
+  remove o prefixo; dev e prod usam o mesmo caminho relativo, sem porta hardcoded); (2) `node_modules/`
+  adicionado ao `.gitignore` raiz (já existia no `.gitignore` do frontend); (3) corrigido erro de instalação:
+  o `npm install` do Tailwind rodou na raiz do workspace (cwd ignorado no job de background), criando
+  `package.json`/`package-lock.json`/`node_modules` órfãos na raiz e deixando o `src/frontend/package.json`
+  sem o Tailwind (quebraria o `npm ci` do Docker) — reinstalado corretamente em `src/frontend` e removidos
+  os arquivos órfãos da raiz
+- Motivo: pedido do usuário + verificação de sanidade durante a revisão
+- Arquivos alterados: `src/frontend/vite.config.ts` (proxy), `.gitignore` (raiz), `src/frontend/package.json`
+  e `package-lock.json` (tailwindcss/@tailwindcss/vite ^4.3.3); removidos `package.json`,
+  `package-lock.json` e `node_modules/` da raiz
+- Testes: `npm run build` (tsc + vite) e `npm run lint` verdes; build passa só com deps do frontend
+- ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Frontend: paleta oficial aplicada)
+- Ação: tokens de cor em `src/frontend/src/index.css` atualizados para a paleta final do projeto —
+  `--background` `#FFF9E8`/`#1A1714`, `--surface` `#FFFFFF`/`#25201B`, `--border` `#E7C875`/`#494038`,
+  `--foreground` `#25201B`/`#F7F0E3`, `--muted` `#6B5B4B`/`#B8AA98`, `--accent` `#FFB12B` (idêntico nos
+  dois temas, `--accent-foreground` `#25201B`); adicionados papéis das próximas telas: `--balance-bg`
+  (`#FFF0BD`/`#4A3518`), `--income-bg`/`--income` (`#E5F3E5`/`#4C9A5F` e `#193522`/`#4CAF60`),
+  `--expense-bg`/`--expense` (`#FBE4DC`/`#CF5B2F` e `#3D2119`/`#CF5B2F`) — mapeados no `@theme inline`
+  (`bg-balance-bg`, `bg-income`, `text-income`, `bg-expense`, `text-expense`, etc.)
+- Motivo: paleta final entregue pelo usuário (substitui a provisória neutra)
+- Arquivos alterados: `src/frontend/src/index.css`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum
