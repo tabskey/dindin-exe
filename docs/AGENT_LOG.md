@@ -174,5 +174,19 @@
   `README.md`
 - Testes: 106 passando (4 novos: replay com corpo diferente → 409, `cpf` nulo → 400/401, auditoria
   grava contraparte); `dotnet build` 0 erros/0 avisos; `dotnet format` limpo; gate de cobertura verde
-- ADR relacionado: nenhum; pendência: remover a chave do histórico do git (003/004) — ver
-  `docs/AGENT_LOG.md` (nota de segurança)
+- ADR relacionado: nenhum; chave JWT removida do histórico do git via `git filter-branch` nas branches
+  003 e 004 (reescritas e force-push), refs auxiliares purgadas (backups, stashes, reflog, gc) — ver
+  entrada seguinte
+
+## 2026-08-31 01:10 — Deep Copilot (Limpeza de segredo do histórico)
+- Ação: `git filter-branch --tree-filter` em `003` e `004` removendo a linha `"Key"` (chave
+  placeholder de desenvolvimento) do `appsettings.json` em todo o histórico (segredo introduzido no
+  commit da Fase 4, `329c811`); commits reescritos e force-push
+  (`origin/003`: `b016520→ca6d996`; `origin/004`: `4d392eb→aa6a24d`); backup local descartado após
+  verificação (`git log --all -S` e `git grep` sem ocorrências); stashes redundantes removidos,
+  `git reflog expire --all` + `git gc --prune=now` purgam os objetos antigos do repositório local
+- Motivo: concluir a remoção do segredo do repositório (código já estava limpo; faltava o histórico)
+- Arquivos: nenhum (reescritura de história); verificação: `git log --all -S` sem resultados, working
+  tree limpo, testes verdes
+- ADR relacionado: nenhum; nota: no GitHub, objetos órfãos podem permanecer acessíveis por SHA por
+  ~90 dias — para remoção definitiva é preciso contato com o suporte do GitHub
