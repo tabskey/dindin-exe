@@ -191,17 +191,17 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**102 testes, todos verdes** (`dotnet test`):
+**106 testes, todos verdes** (`dotnet test`):
 
 ### Testes unitários (80)
 
 Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, contraparte, auditoria, idempotência, seed e migrações.
 
-### Testes de integração (22)
+### Testes de integração (26)
 
-`WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
+`WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 
-Cobertura total de linhas: **97,1%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
+Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
 ---
 
