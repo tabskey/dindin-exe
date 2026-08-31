@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maskAccountNumber, maskCpf } from './masks'
+import { maskAccountNumber, maskBRL, maskCpf, parseBRL } from './masks'
 
 describe('maskCpf', () => {
   it('retorna vazio quando não há dígitos', () => {
@@ -31,5 +31,39 @@ describe('maskAccountNumber', () => {
   it('ignora não-dígitos e limita a 7 dígitos', () => {
     expect(maskAccountNumber('00-315-41')).toBe('00315-41')
     expect(maskAccountNumber('003154177')).toBe('00315-41')
+  })
+})
+
+describe('maskBRL', () => {
+  it('mantém os reais como digitados e agrupa milhares', () => {
+    expect(maskBRL('')).toBe('')
+    expect(maskBRL('0')).toBe('0')
+    expect(maskBRL('5')).toBe('5')
+    expect(maskBRL('50')).toBe('50')
+    expect(maskBRL('5050')).toBe('5.050')
+    expect(maskBRL('1234567')).toBe('1.234.567')
+  })
+
+  it('aceita vírgula para os centavos e remove zeros à esquerda', () => {
+    expect(maskBRL('50,')).toBe('50,')
+    expect(maskBRL('50,5')).toBe('50,5')
+    expect(maskBRL('50,50')).toBe('50,50')
+    expect(maskBRL('05')).toBe('5')
+    expect(maskBRL('0,50')).toBe('0,50')
+  })
+
+  it('ignora não-dígitos/vírgula e limita a 10 dígitos nos reais', () => {
+    expect(maskBRL('R$ 1.234,56')).toBe('1.234,56')
+    expect(maskBRL('99999999999999999999')).toBe('9.999.999.999')
+  })
+})
+
+describe('parseBRL', () => {
+  it('converte o texto mascarado de volta em número', () => {
+    expect(parseBRL('')).toBe(0)
+    expect(parseBRL('0')).toBe(0)
+    expect(parseBRL('50')).toBe(50)
+    expect(parseBRL('50,50')).toBe(50.5)
+    expect(parseBRL('12.345,67')).toBe(12345.67)
   })
 })

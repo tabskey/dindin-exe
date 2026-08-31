@@ -4,7 +4,7 @@ Controle das etapas de implementação do frontend (React 19 + Vite + TypeScript
 seguindo `docs/AGENTS.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto
 com o código, em cada fase.
 
-**Fase atual:** 5 — Movimentação (modal único depósito/saque, próxima)
+**Fase atual:** 6 — Validação final e documentação
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -25,7 +25,7 @@ com o código, em cada fase.
   **CPF** ou **número de conta** (backend já suporta ambos — ADR 0003).
 - Testes: Vitest + Testing Library (componentes e regras), Playwright (fluxos E2E) e SonarQube
   local (qualidade + cobertura ≥ 80%) — ADR 0005.
-- Fora de escopo (não implementar sem consulta): avatar na UI, paginação do histórico, saque com
+- Fora de escopo (não implementar sem consulta): paginação do histórico, saque com
   contraparte, refresh token, recuperação de senha.
 
 ---
@@ -95,6 +95,9 @@ com o código, em cada fase.
 - [x] Carregamento de dados: `GET /accounts/{id}/balance` + `GET /accounts/{id}/movements?page=1`;
       estado de carregamento e erro simples.
 - [x] FAB "+" fixo (canto inferior direito).
+- [x] Avatar no cabeçalho com fallback de iniciais ("Ana Teste" → "AT"; nome único → 2 primeiras
+      letras); clicar abre o modal com "Ver imagem de perfil" (tamanho original, até 800px) e
+      "Trocar imagem de perfil" (upload multipart; backend limita a 512 KB).
 - [x] Testes Vitest+RTL do `ExtratoPage`: saldo e as 8 movimentações com estilos de receita/
       despesa; estados de carregamento e erro; botão sair (logout).
 - [x] Critério: login com Ana → saldo inicial e as movimentações do seed renderizadas com os
@@ -102,23 +105,24 @@ com o código, em cada fase.
 
 ## Fase 5 — Movimentação (modal único depósito/saque)
 
-- [ ] FAB "+" → escolha **Depósito | Saque**.
-- [ ] `MovementModal`: valor em R$ (máscara de moeda); se **depósito** → seção "Pra quem?" com
+- [x] FAB "+" → escolha **Depósito | Saque** (toggle dentro do modal).
+- [x] `MovementModal`: valor em R$ (máscara de moeda); se **depósito** → seção "Pra quem?" com
       seletor **CPF | Número da conta**:
       - CPF → um campo com máscara `000.000.000-00`;
       - Conta → dois campos (número `XXXXX` + dígito `XX`) combinados em `XXXXX-XX`;
       - vazio → auto-depósito (boca do caixa).
       Se **saque** → apenas valor.
-- [ ] Idempotência: `Idempotency-Key` com `crypto.randomUUID()` por tentativa (reuso em retry da
+- [x] Idempotência: `Idempotency-Key` com `crypto.randomUUID()` por tentativa (reuso em retry da
       mesma tentativa; regenera após sucesso) — replay não duplica.
-- [ ] Estados: loading (botão desabilitado), erro inline (ex.: "Contraparte não encontrada"),
+- [x] Estados: loading (botão desabilitado), erro inline (ex.: "Contraparte não encontrada"),
       sucesso → confirmação (valor + novo saldo) e refresh do extrato.
-- [ ] Testes Vitest+RTL do `MovementModal`: depósito (CPF | número da conta | vazio) e saque;
+- [x] Testes Vitest+RTL do `MovementModal`: depósito (CPF | número da conta | vazio) e saque;
       `Idempotency-Key` por tentativa (mesma chave em retry, nova após sucesso); estados
       loading/erro/sucesso.
-- [ ] Critério: depósito com CPF, com número de conta e vazio (auto-depósito) atualizam saldo e
-      histórico; saque com saldo insuficiente → erro amigável sem quebrar o extrato; `npm test`
-      verdes.
+- [x] Critério: depósito com CPF, com número de conta e vazio (auto-depósito) atualizam saldo e
+      histórico (comportamento validado pelos testes de integração do backend e pelos testes de
+      componente do modal; fluxo real no navegador fica para a Fase 6); saque com saldo
+      insuficiente → erro amigável sem quebrar o extrato; `npm test` verdes.
 
 ## Fase 6 — Validação final e documentação
 

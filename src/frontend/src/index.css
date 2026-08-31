@@ -60,6 +60,7 @@
   --color-income: var(--income);
   --color-expense-bg: var(--expense-bg);
   --color-expense: var(--expense);
+  --font-bree: 'Bree Serif', serif;
 }
 
 @layer components {

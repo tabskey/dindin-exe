@@ -8,6 +8,7 @@ vi.mock('../lib/api', () => ({
   getMovements: vi.fn(),
   getAvatar: vi.fn(),
   updateAvatar: vi.fn(),
+  createMovement: vi.fn(),
 }))
 vi.mock('../context/auth', () => ({
   useAuth: vi.fn(),
@@ -70,7 +71,8 @@ describe('ExtratoPage', () => {
     render(<ExtratoPage />)
 
     expect(await screen.findByText(/1\.250,50/)).toBeInTheDocument()
-    expect(screen.getByText('Olá, Ana Teste')).toBeInTheDocument()
+    expect(screen.getByText(/Olá/)).toBeInTheDocument()
+    expect(screen.getByText(/Ana Teste/)).toBeInTheDocument()
     expect(screen.getByText('AT')).toBeInTheDocument()
     expect(screen.getByText('30/08/2026')).toBeInTheDocument()
     expect(screen.getAllByText('Boca do caixa')).toHaveLength(3)
@@ -84,6 +86,15 @@ describe('ExtratoPage', () => {
     const expenseValue = screen.getByText(/- R\$\s*35,90/)
     expect(expenseValue).toHaveClass('text-expense')
     expect(expenseValue.closest('li')).toHaveClass('bg-expense-bg')
+  })
+
+  it('abre o modal de movimentação ao clicar no FAB', async () => {
+    const user = userEvent.setup()
+    render(<ExtratoPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Nova movimentação' }))
+    expect(screen.getByRole('dialog', { name: 'Depósito' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Depositar' })).toBeInTheDocument()
   })
 
   it('mostra o estado de carregamento enquanto busca os dados', async () => {

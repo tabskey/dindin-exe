@@ -517,3 +517,29 @@
 - Testes: `npm test` 32/32 verdes (sem alteração de testes — nomes acessíveis preservados);
   `npm run build` e `npm run lint` verdes
 - ADR relacionado: 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 5 — Movimentação: modal único depósito/saque)
+- Ação: FAB "+" agora abre o `MovementModal` (componente novo) com toggle **Depósito | Saque**;
+  valor com máscara de moeda (novas `maskBRL`/`parseBRL` em `lib/masks.ts`; dígitos = centavos);
+  depósito tem a seção "Pra quem?" com seletor **CPF** (um campo `000.000.000-00`) ou **Número da
+  conta** (dois campos número + dígito → `XXXXX-XX`); ambos vazios → auto-depósito (nenhum campo
+  de contraparte enviado); saque envia só o valor. Idempotência: `Idempotency-Key` com
+  `crypto.randomUUID()` por tentativa (mesma chave no retry da mesma tentativa; regenerada após o
+  sucesso). Estados: loading (botão "Enviando…" desabilitado), erro inline (mensagem do backend,
+  ex. "Counterparty account not found."), sucesso → confirmação (valor + novo saldo buscado via
+  `GET /balance`) e refresh do extrato (`onSuccess={loadExtrato}`)
+- Motivo: fase 5 do checklist do frontend — movimentação ponta a ponta via modal
+- Arquivos alterados: criados `src/frontend/src/components/MovementModal.tsx` e
+  `MovementModal.test.tsx` (9 testes); `lib/masks.ts` (+`maskBRL`/`parseBRL`) e `masks.test.ts`
+  (+3 testes); `pages/ExtratoPage.tsx` (FAB abre o modal, refresh no sucesso) e
+  `ExtratoPage.test.tsx` (+1 teste do FAB); `docs/FRONTEND_DEV_CHECKLIST.md` (Fase 5 [x],
+  fase atual → 6, avatar movido para o escopo já implementado); `docs/AGENT_LOG.md`
+- Observações: (1) contrato do backend mapeado — `POST /accounts/{id}/movements` exige
+  `Idempotency-Key` (replay = 201 com o mesmo id), 201 sem saldo no corpo (busca via GET /balance),
+  contraparte inexistente e saldo insuficiente → 400 com `{"error": ...}`; (2) o h1 "Olá," com a
+  vírgula no primeiro span foi editado manualmente em disco (diverge do que foi commitado) — teste
+  ajustado para regex; (3) `apply_patch` multi-hunk falhou de novo (rollback all-or-nothing no
+  ExtratoPage e no checklist) — integração refeita com `str_replace_in_file` e hunk único
+- Testes: `npm test` 45/45 verdes (32 → 45: +9 MovementModal, +3 masks, +1 ExtratoPage);
+  `npm run build` e `npm run lint` verdes; verificação real no navegador/Docker fica para a Fase 6
+- ADR relacionado: 0003 (contraparte por CPF/número), 0004 (tela de extrato) e 0005 (testes)
