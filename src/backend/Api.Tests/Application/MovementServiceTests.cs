@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Results;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Api.Tests.Application;
 
@@ -13,7 +14,7 @@ public class MovementServiceTests
     private readonly FakeMovementRepository _movements = new();
     private readonly MovementService _service;
 
-    public MovementServiceTests() => _service = new MovementService(_accounts, _movements);
+    public MovementServiceTests() => _service = new MovementService(_accounts, _movements, NullLogger<MovementService>.Instance);
 
     private Account AddAccount(long id, decimal balance)
     {

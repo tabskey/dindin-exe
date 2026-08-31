@@ -23,7 +23,13 @@ public sealed class AuditedMovementService : IMovementService
         var result = await _inner.CreateAsync(accountId, request, cancellationToken);
         if (result.IsSuccess)
         {
-            var payload = JsonSerializer.Serialize(new { accountId, request.Type, request.Amount }, JsonOptions);
+            var payload = JsonSerializer.Serialize(new
+            {
+                accountId,
+                request.Type,
+                request.Amount,
+                counterparty = result.Value!.Counterparty
+            }, JsonOptions);
             await _audit.AddAsync(
                 AuditLog.Create("Movement", result.Value!.Id.ToString(), "create", payload),
                 cancellationToken);

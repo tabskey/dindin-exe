@@ -3,6 +3,7 @@ using Application.Dtos;
 using BC = BCrypt.Net.BCrypt;
 using Domain.Entities;
 using Domain.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
@@ -16,11 +17,22 @@ public sealed class AccountService : IAccountService
     };
 
     private readonly IAccountRepository _accounts;
+    private readonly ILogger<AccountService> _logger;
 
-    public AccountService(IAccountRepository accounts) => _accounts = accounts;
+    public AccountService(IAccountRepository accounts, ILogger<AccountService> logger)
+    {
+        _accounts = accounts;
+        _logger = logger;
+    }
 
     public async Task<Result<AccountDto>> CreateAsync(CreateAccountRequest request, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Cpf))
+        {
+            return Result<AccountDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "Name and CPF are required."));
+        }
+
         if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < MinPasswordLength)
         {
             return Result<AccountDto>.Failure(
@@ -38,11 +50,18 @@ public sealed class AccountService : IAccountService
         await _accounts.AddAsync(account, cancellationToken);
         await _accounts.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("Account created: id={Id}, cpf={Cpf}", account.Id, account.Cpf);
         return Result<AccountDto>.Success(ToDto(account));
     }
 
     public async Task<Result<AccountDto>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(request.Cpf) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Result<AccountDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidCredentials, "Invalid CPF or password."));
+        }
+
         var account = await _accounts.GetByCpfAsync(request.Cpf.Trim(), cancellationToken);
         if (account is null || !BC.Verify(request.Password, account.PasswordHash))
         {

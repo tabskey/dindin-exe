@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Movements;
 using Domain.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
@@ -12,11 +13,13 @@ public sealed class MovementService : IMovementService
     private const int MaxSaveAttempts = 3;
     private readonly IAccountRepository _accounts;
     private readonly IMovementRepository _movements;
+    private readonly ILogger<MovementService> _logger;
 
-    public MovementService(IAccountRepository accounts, IMovementRepository movements)
+    public MovementService(IAccountRepository accounts, IMovementRepository movements, ILogger<MovementService> logger)
     {
         _accounts = accounts;
         _movements = movements;
+        _logger = logger;
     }
 
     public async Task<Result<MovementDto>> CreateAsync(long accountId, CreateMovementRequest request, CancellationToken cancellationToken = default)
@@ -80,6 +83,9 @@ public sealed class MovementService : IMovementService
             }
         }
 
+        _logger.LogInformation(
+            "Movement created: id={Id}, account={AccountId}, type={Type}, amount={Amount}, counterparty={Counterparty}",
+            movement.Id, accountId, request.Type, request.Amount, counterparty);
         return Result<MovementDto>.Success(ToDto(movement));
     }
 

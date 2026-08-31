@@ -8,6 +8,7 @@ using Application.Services;
 using Domain.Results;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -18,22 +19,26 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
-        .AddInterceptors(new RowVersionInterceptor()));
+        .AddInterceptors(new RowVersionInterceptor(), new SqliteBusyTimeoutInterceptor()));
 
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IMovementRepository, MovementRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IAccountService>(sp =>
     new AuditedAccountService(
-        new AccountService(sp.GetRequiredService<IAccountRepository>()),
+        new AccountService(
+            sp.GetRequiredService<IAccountRepository>(),
+            sp.GetRequiredService<ILogger<AccountService>>()),
         sp.GetRequiredService<IAuditLogRepository>()));
 builder.Services.AddScoped<IMovementService>(sp =>
     new AuditedMovementService(
         new MovementService(
             sp.GetRequiredService<IAccountRepository>(),
-            sp.GetRequiredService<IMovementRepository>()),
+            sp.GetRequiredService<IMovementRepository>(),
+            sp.GetRequiredService<ILogger<MovementService>>()),
         sp.GetRequiredService<IAuditLogRepository>()));
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
@@ -41,6 +46,11 @@ builder.Services.AddScoped<JwtTokenService>();
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Seção 'Jwt' ausente em appsettings.json.");
+if (string.IsNullOrWhiteSpace(jwt.Key))
+{
+    throw new InvalidOperationException(
+        "Jwt:Key não configurada. Defina a variável de ambiente Jwt__Key (veja .env.example).");
+}
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -60,6 +70,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.UseExceptionHandler(errorApp => errorApp.Run(async ctx =>
+{
+    var error = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
+    ctx.RequestServices.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("GlobalExceptionHandler")
+        .LogError(error, "Unhandled exception on {Path}", ctx.Request.Path);
+
+    ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { error = "An unexpected error occurred." }));
+}));
 
 if (app.Environment.IsDevelopment())
 {
@@ -143,7 +165,7 @@ app.MapGet("/accounts/{accountId:long}/movements", async (long accountId, Claims
 .RequireAuthorization()
 .WithName("GetMovementHistory");
 
-// POST /accounts/{id}/avatar — upload multipart (sem idempotency filter).
+// POST /accounts/{id}/avatar — upload multipart (idempotência opcional).
 app.MapPost("/accounts/{accountId:long}/avatar", async (long accountId, IFormFile file, ClaimsPrincipal user,
     IAccountService accounts, CancellationToken ct) =>
 {
@@ -159,6 +181,7 @@ app.MapPost("/accounts/{accountId:long}/avatar", async (long accountId, IFormFil
 })
 .DisableAntiforgery()
 .RequireAuthorization()
+.AddEndpointFilter(new IdempotencyFilter())
 .WithName("UploadAvatar");
 
 // GET /accounts/{id}/avatar — bytes da imagem com content type.

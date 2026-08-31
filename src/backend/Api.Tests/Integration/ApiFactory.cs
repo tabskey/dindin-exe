@@ -1,12 +1,9 @@
-using System.Data.Common;
 using System.Net.Http.Json;
 using Application.Dtos;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -26,13 +23,16 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var connectionString = $"Data Source={_dbPath};Pooling=False";
+        // A chave JWT sai do appsettings (o segredo real vive em .env, fora do repositório);
+        // os testes injetam uma chave própria via configuração do host.
+        builder.UseSetting("Jwt:Key", "integration-tests-only-secret-key-0123456789");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<AppDbContext>();
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(connectionString)
-                    .AddInterceptors(new RowVersionInterceptor(), new BusyTimeoutInterceptor()));
+                    .AddInterceptors(new RowVersionInterceptor(), new SqliteBusyTimeoutInterceptor()));
         });
     }
 
@@ -89,9 +89,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     }
 
     // CPF único por chamada; o backend não valida formato, apenas unicidade.
+    // Apenas dígitos 0-9: Guid.ToString("N") gera hex (a-f) e, com <5 dígitos,
+    // MaskCpf lançava ArgumentOutOfRangeException de forma intermitente.
     public static string NewCpf()
     {
-        var digits = Guid.NewGuid().ToString("N")[..11];
+        var digits = string.Concat(Enumerable.Range(0, 11).Select(_ => Random.Shared.Next(10)));
         return $"{digits[..3]}.{digits[3..6]}.{digits[6..9]}-{digits[9..]}";
     }
 
@@ -99,36 +101,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         var digits = new string(cpf.Where(char.IsAsciiDigit).ToArray());
         return $"{digits[^5..^2]}-{digits[^2..]}";
-    }
-
-    // SQLite por padrão falha imediatamente (SQLITE_BUSY) quando duas conexões escrevem ao
-    // mesmo tempo; o timeout faz a segunda esperar o lock e seguir o fluxo normal de retry
-    // do RowVersion, em vez de estourar erro de banco.
-    private sealed class BusyTimeoutInterceptor : DbConnectionInterceptor
-    {
-        public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
-        {
-            SetBusyTimeout(connection);
-            base.ConnectionOpened(connection, eventData);
-        }
-
-        public override Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
-        {
-            SetBusyTimeout(connection);
-            return base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
-        }
-
-        private static void SetBusyTimeout(DbConnection connection)
-        {
-            if (connection is not SqliteConnection sqlite)
-            {
-                return;
-            }
-
-            using var command = sqlite.CreateCommand();
-            command.CommandText = "PRAGMA busy_timeout = 30000;";
-            command.ExecuteNonQuery();
-        }
     }
 }
 
