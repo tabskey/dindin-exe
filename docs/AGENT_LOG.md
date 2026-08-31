@@ -205,3 +205,17 @@
   (fix warning CS8602 — `movement!` na linha 71; build voltou a 0 avisos)
 - Testes: 106 passando; build 0 erros/0 avisos
 - ADR relacionado: nenhum (ajuste pontual de documentação + fix de warning em teste)
+
+## 2026-08-31 — Deep Copilot (Testes no frontend — ADR 0005 + checklist)
+- Ação: aprovado pelo usuário o plano de testes do frontend e aplicados os ajustes de documentação —
+  novo ADR 0005 (Vitest + Testing Library, Playwright, SonarQube local via Docker, cobertura ≥ 80%);
+  FRONTEND_DEV_CHECKLIST renumerado (nova Fase 3 — Infra de testes; extrato → Fase 4, movimentação →
+  Fase 5, validação → Fase 6) com itens/critérios de teste em cada fase; AGENTS.md e README.md com os
+  comandos de teste do frontend; nota de substituição no ADR 0004 (testes não mais adiados)
+- Motivo: pedido do usuário — testes de componentes/regras (Vitest + Testing Library), E2E (Playwright)
+  e qualidade/cobertura (SonarQube) integrados às fases antes do desenvolvimento
+- Arquivos alterados: criado `docs/adr/0005-testes-e-qualidade-no-frontend.md`; editados
+  `docs/adr/0004-frontend-sessao-e-client-de-api.md`, `docs/FRONTEND_DEV_CHECKLIST.md`,
+  `docs/AGENTS.md`, `README.md`
+- Testes: nenhum (documentação); frontend segue com build/lint verdes até a Fase 3
+- ADR relacionado: 0005 (Aceito); 0004 atualizado (parte de testes substituída)

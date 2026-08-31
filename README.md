@@ -203,6 +203,13 @@ Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, 
 
 Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
+### Testes do frontend (próximas fases)
+
+O frontend ganha testes a partir da Fase 3 do checklist (ADR 0005): **Vitest + Testing Library**
+(componentes e regras), **Playwright** (fluxos E2E no navegador) e **SonarQube local** via Docker
+(qualidade e cobertura, meta ≥ 80% de linhas) — detalhes em
+[`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md).
+
 ---
 
 ## 📐 Decisões de escopo
