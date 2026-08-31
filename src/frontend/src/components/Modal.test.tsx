@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
 
-function renderModal(overrides: { open?: boolean; onClose?: () => void } = {}) {
+function renderModal(overrides: { open?: boolean; onClose?: () => void; dialogClassName?: string } = {}) {
   const props = {
     open: true,
     onClose: vi.fn(),
@@ -54,5 +54,11 @@ describe('Modal', () => {
     expect(document.body.style.overflow).toBe('hidden')
     unmount()
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('aplica a classe personalizada ao diálogo quando informada', () => {
+    renderModal({ dialogClassName: 'custom-dialog-class' })
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.children[1]).toHaveClass('custom-dialog-class')
   })
 })

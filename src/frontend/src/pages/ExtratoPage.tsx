@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth'
+import { AvatarModal } from '../components/AvatarModal'
 import { getAvatar, getBalance, getMovements, type MovementDto } from '../lib/api'
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -48,6 +49,7 @@ export function ExtratoPage() {
   const [movements, setMovements] = useState<MovementDto[]>([])
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const avatarUrlRef = useRef<string | null>(null)
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -67,6 +69,25 @@ export function ExtratoPage() {
       })
       .finally(() => {
         setLoading(false)
+      })
+  }, [account])
+
+  // Recarrega só o avatar (após upload bem-sucedido); falha mantém o atual.
+  const reloadAvatar = useCallback(() => {
+    if (!account) {
+      return
+    }
+    getAvatar(account.id)
+      .then((blob) => {
+        const next = blob ? URL.createObjectURL(blob) : null
+        if (avatarUrlRef.current) {
+          URL.revokeObjectURL(avatarUrlRef.current)
+        }
+        avatarUrlRef.current = next
+        setAvatarUrl(next)
+      })
+      .catch(() => {
+        // Avatar indisponível: mantém o que já está na tela.
       })
   }, [account])
 
@@ -100,15 +121,18 @@ export function ExtratoPage() {
     <main className="min-h-svh bg-background px-4 py-6 text-foreground">
       <header className="flex items-center justify-between gap-3 pr-14">
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-bold text-accent-foreground"
+          <button
+            type="button"
+            aria-label="Opções do avatar"
+            onClick={() => setAvatarMenuOpen(true)}
+            className="flex size-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-bold text-accent-foreground transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             {avatarUrl ? (
               <img src={avatarUrl} alt={`Avatar de ${account?.name ?? ''}`} className="size-full object-cover" />
             ) : (
               initials
             )}
-          </div>
+          </button>
           <h1 className="truncate text-lg font-bold">Olá, {account?.name}</h1>
         </div>
         <button
@@ -181,6 +205,18 @@ export function ExtratoPage() {
       >
         <Plus className="size-7" />
       </button>
+
+      {account && (
+        <AvatarModal
+          open={avatarMenuOpen}
+          accountId={account.id}
+          name={account.name}
+          initials={initials}
+          avatarUrl={avatarUrl}
+          onClose={() => setAvatarMenuOpen(false)}
+          onAvatarUpdated={reloadAvatar}
+        />
+      )}
     </main>
   )
 }

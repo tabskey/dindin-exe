@@ -442,3 +442,78 @@
   avatar): login → "AT" visível no cabeçalho, verificado via Playwright (spec temporário removido)
 - Testes: `npm test` 24/24 verdes; `npm run build` e `npm run lint` verdes; verificação E2E real 1/1
 - ADR relacionado: 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Frontend: modal do avatar — ver/trocar imagem)
+- Ação: clicar no avatar (cabeçalho do extrato) abre um modal com duas opções:
+  **Ver imagem de perfil** (mostra o avatar grande, ou as iniciais grandes sem avatar) e
+  **Trocar imagem de perfil** (upload multipart via `POST /accounts/{id}/avatar`, com estados
+  de envio e erro inline). Novo componente `components/AvatarModal.tsx` reutilizando o `Modal`
+  do projeto; `updateAvatar(accountId, file)` no client (FormData, sem Content-Type manual);
+  no `ExtratoPage` o avatar virou `<button aria-label="Opções do avatar">`, com `reloadAvatar`
+  recarregando o blob após upload (revoga o object URL antigo)
+- Motivo: pedido do usuário (opções "ver imagem de perfil" / "trocar imagem de perfil")
+- Arquivos alterados: `src/frontend/src/lib/api.ts` (updateAvatar), `src/frontend/src/components/AvatarModal.tsx` (novo),
+  `src/frontend/src/pages/ExtratoPage.tsx` (avatar clicável + modal + reloadAvatar),
+  `src/frontend/src/components/AvatarModal.test.tsx` (novo, 6 testes),
+  `src/frontend/src/pages/ExtratoPage.test.tsx` (+1 teste de integração)
+- Observações: (1) `apply_patch` perde a posição quando múltiplos hunks mudam o arquivo — para
+  este arquivo usei `str_replace_in_file` com correspondência literal (mais confiável); (2) o
+  teste E2E real fez um upload de um PNG 1x1 na Ana — o volume do banco ficou com esse avatar de
+  teste (reset do volume fica a critério do usuário); (3) spec E2E temporário removido
+- Testes: `npm test` 31/31 verdes; `npm run build` e `npm run lint` verdes; E2E real 1/1
+  (modal abre, ver imagem com iniciais grandes, upload multipart real → modal fecha → cabeçalho
+  mostra a imagem)
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Frontend: iniciais sumiram — causa e correção)
+- Ação: investigar o relato "as iniciais do avatar sumiram quando não há avatar". O código estava
+  correto (sem avatar → `avatarUrl` null → iniciais); a causa foi o avatar de teste PNG 1x1
+  transparente (70 bytes) que a verificação E2E anterior enviou para a Ana: a app vê um avatar
+  existente, mas a imagem é invisível → círculo "vazio". Inspeção do banco (cópia do `dindin.db`
+  do container, lida via `node:sqlite` do Node 24 em modo read-only) confirmou: só as 3 contas do
+  seed, sem dados criados manualmente — seguro resetar
+- Ação: `docker compose down -v` + `docker compose up -d` (comandos separados) → seed limpo;
+  `GET /accounts/1/avatar` retorna 404 → iniciais "AT" de volta
+- Motivo: pedido do usuário
+- Arquivos alterados: nenhum (só dados de banco de desenvolvimento; temporários `db-check.cjs` e
+  `dindin-db-check.db` removidos)
+- Observações: (1) `apply_patch` e o anexo do usuário mostravam o arquivo ANTES das mudanças do
+  modal — o `ExtratoPage.tsx` em disco estava íntegro; (2) hardening opcional sugerido: `onError`
+  no `<img>` para cair nas iniciais caso a imagem quebre (um PNG transparente NÃO dispara onError,
+  então não resolveria o caso do avatar 1x1 — é proteção contra imagem corrompida)
+- Testes: nenhuma mudança de código nesta rodada
+
+## 2026-08-31 — Deep Copilot (Frontend: visualização do avatar em tamanho original)
+- Ação: modo "Ver imagem de perfil" redesenhado: imagem em tamanho original limitada a 800px de
+  altura (`max-h-[min(800px,75svh)]`) — no celular ajusta à tela (75svh); fundo continua com o
+  blur do `Modal` (overlay `backdrop-blur-sm`); abaixo da imagem uma mini-caixa (`w-fit`, borda,
+  `bg-foreground/10`) com botões **Voltar** e **Fechar**; sem avatar, mostra as iniciais grandes
+  (círculo `size-40`). `Modal` ganhou prop opcional `dialogClassName` (padrão inalterado) para o
+  diálogo alargar na visualização (`w-fit max-w-[calc(100vw-2rem)] p-6`)
+- Motivo: pedido do usuário (imagem no tamanho original até 800px, ajuste no celular, blur no
+  fundo, mini-caixa com Voltar/Fechar)
+- Arquivos alterados: `src/frontend/src/components/Modal.tsx` (prop `dialogClassName`),
+  `src/frontend/src/components/AvatarModal.tsx` (modo visualização),
+  `src/frontend/src/components/Modal.test.tsx` (+1 teste), `src/frontend/src/components/AvatarModal.test.tsx`
+  (asserções da visualização: mini-caixa, classe `max-h-[min(800px,75svh)]`)
+- Observações: (1) erro de patch em `Modal.tsx` (hunk extra inválido → rollback all-or-nothing);
+  (2) E2E em viewport de celular (390x844): seletor `getByText('AT')` era ambíguo (cabeçalho
+  atrás do modal + iniciais grandes) — escopado em `getByRole('dialog')`
+- Testes: `npm test` 32/32 verdes; `npm run build` e `npm run lint` verdes; E2E real 1/1 em
+  viewport mobile (spec temporário removido)
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Frontend: X no topo e setinha no lugar de "Voltar" no modal do avatar)
+- Ação: navegação do modal do avatar redesenhada — **X** (lucide) no canto superior direito fecha
+  (em todos os modos), **setinha** (`ArrowLeft`) no canto superior esquerdo substitui o botão
+  "Voltar" (só na visualização); botões de baixo (mini-caixa Voltar/Fechar e "Fechar" do menu)
+  removidos. Acessíveis via `aria-label` ("Fechar"/"Voltar") — os testes existentes seguem válidos
+- Motivo: pedido do usuário
+- Arquivos alterados: `src/frontend/src/components/AvatarModal.tsx` (reescrito)
+- Observações: (1) o arquivo anexado/em disco estava com JSX quebrado — o wrapper da mini-caixa
+  perdeu a tag de abertura e sobrou um `</div>` solto (edição manual); a reescrita corrigiu e já
+  aplicou o novo layout; (2) atenção para edições manuais: o `apply_patch` não foi usado nesta
+  rodada; reescrita via `write_file`
+- Testes: `npm test` 32/32 verdes (sem alteração de testes — nomes acessíveis preservados);
+  `npm run build` e `npm run lint` verdes
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes)

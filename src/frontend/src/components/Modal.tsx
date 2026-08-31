@@ -6,11 +6,13 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  // Classes do diálogo — usado para alargar o conteúdo (ex.: avatar em tamanho original).
+  dialogClassName?: string
 }
 
 // Modal acessível: overlay, fecha com Esc e clique fora, aria-modal, foco no
 // primeiro campo e trava de scroll. Sem lib de UI (ADR 0004).
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, dialogClassName }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
 
@@ -50,7 +52,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-14 shadow-lg">
+      <div ref={dialogRef} className={dialogClassName ?? 'relative w-full max-w-sm rounded-2xl border border-border bg-surface p-14 shadow-lg'}>
         <h2 className="mb-4 text-center font-['Bree_Serif',serif] text-3xl text-foreground sm:text-4xl">{title}</h2>
         {children}
       </div>

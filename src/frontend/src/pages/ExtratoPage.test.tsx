@@ -7,6 +7,7 @@ vi.mock('../lib/api', () => ({
   getBalance: vi.fn(),
   getMovements: vi.fn(),
   getAvatar: vi.fn(),
+  updateAvatar: vi.fn(),
 }))
 vi.mock('../context/auth', () => ({
   useAuth: vi.fn(),
@@ -141,5 +142,14 @@ describe('ExtratoPage', () => {
     const img = await screen.findByAltText('Avatar de Ana Teste')
     expect(img).toHaveAttribute('src', 'blob:avatar-mock')
     expect(screen.queryByText('AT')).not.toBeInTheDocument()
+  })
+
+  it('abre o modal de avatar com as duas opções ao clicar no avatar', async () => {
+    const user = userEvent.setup()
+    render(<ExtratoPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Opções do avatar' }))
+    expect(screen.getByRole('button', { name: 'Ver imagem de perfil' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Trocar imagem de perfil' })).toBeInTheDocument()
   })
 })

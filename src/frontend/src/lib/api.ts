@@ -175,6 +175,32 @@ export async function getAvatar(accountId: number): Promise<Blob | null> {
   return response.blob()
 }
 
+// Upload do avatar (multipart). O Content-Type NÃO é definido manualmente — o
+// browser monta o boundary do FormData.
+export async function updateAvatar(accountId: number, file: File): Promise<void> {
+  const token = getToken()
+  const headers = new Headers()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const form = new FormData()
+  form.append('file', file)
+
+  const response = await fetch(`${API_BASE}/accounts/${accountId}/avatar`, {
+    method: 'POST',
+    headers,
+    body: form,
+  })
+
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      unauthorizedHandler?.()
+    }
+    throw new ApiError(response.status, await errorMessage(response))
+  }
+}
+
 export function createMovement(
   accountId: number,
   input: CreateMovementRequest,
