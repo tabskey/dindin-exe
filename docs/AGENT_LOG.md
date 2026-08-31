@@ -268,3 +268,56 @@
 - Testes: 109/109 verdes (106 + 3 novos); `dotnet build` 0 erros/0 avisos; `dotnet format
   --verify-no-changes` limpo
 - ADR relacionado: 0003 (extensão da 0002; precedência número → CPF → auto-depósito; sem migração)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 0 — checklist + ADR 0004)
+- Ação: planejamento do frontend registrado — criado `docs/FRONTEND_DEV_CHECKLIST.md` (6 fases:
+  ADR, infra de API/sessão, modal de criar conta, extrato mínimo, movimentação, validação final) e
+  `docs/adr/0004-frontend-sessao-e-client-de-api.md` (sem router — troca por estado; `AuthContext`
+  com token/conta em `localStorage dindin-token`; client `api.ts` sobre `/api` com parse de
+  `{"error": ...}`; idempotência `crypto.randomUUID()` por tentativa; modal e máscaras próprios;
+  sem framework de testes no frontend — build/lint + fluxo manual)
+- Motivo: aprovação do usuário ao planejamento (contraparte por número já commitada na branch 005)
+- Arquivos alterados: `docs/FRONTEND_DEV_CHECKLIST.md`, `docs/adr/0004-...md`, `docs/AGENT_LOG.md`
+- Testes: n/a (docs) — build/lint do frontend seguem verdes
+- ADR relacionado: 0004 (pendente de aprovação para iniciar a Fase 1)
+
+## 2026-08-31 — Deep Copilot (Frontend: revisão da ADR 0004 — incluir React Router)
+- Ação: a pedido do usuário, a decisão de navegação passou de "sem router (troca por estado)" para
+  **react-router** (rotas `/login` e `/extrato` com guard). Justificativa registrada na ADR como
+  decisão de consistência e demonstração de nível alto (URL por tela, deep-link, botão voltar,
+  padrão de mercado), explicitamente NÃO over-engineering (uso simples: 2 rotas + guard)
+- Motivo: preferência do usuário — projeto é vitrine de nível alto
+- Arquivos alterados: `docs/adr/0004-...md` (reescrito), `docs/FRONTEND_DEV_CHECKLIST.md`
+  (escopo/Fase 0/Fase 1), `docs/AGENT_LOG.md`
+- Testes: n/a (docs)
+- ADR relacionado: 0004 (aguardando aprovação para Fase 1)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 1 — infra de API e sessão)
+- Ação: instalado `react-router-dom`; rotas `/login` (pública) e `/extrato` (protegida) com
+  redirects no `App`; `src/lib/api.ts` (client fetch sobre `/api`, `Authorization: Bearer`, parse
+  de `{"error": ...}`, `ApiError` por status, DTOs espelhando o backend, `login`/`createAccount`/
+  `getBalance`/`getMovements`/`createMovement` com suporte a `Idempotency-Key`); `AuthContext`
+  (`src/context/auth.ts` + `AuthProvider.tsx`, token em `dindin-token` e conta em
+  `dindin-account`, logout automático em 401 de rota autenticada); `LoginPage` com submit real
+  (loading, erro inline, navega para `/extrato`, pré-preenche CPF via `location.state`); `main.tsx`
+  com `BrowserRouter`; `ExtratoPage` esqueleto com "Sair" (Fase 3 preenche)
+- Motivo: aprovação da ADR 0004 (incluindo react-router como decisão de consistência)
+- Arquivos alterados: `src/frontend/package.json`/`package-lock.json` (react-router-dom),
+  `src/frontend/src/lib/api.ts`, `src/frontend/src/context/auth.ts`, `context/AuthProvider.tsx`,
+  `pages/LoginPage.tsx`, `pages/ExtratoPage.tsx` (esqueleto), `App.tsx`, `main.tsx`,
+  `docs/adr/0004-...md` (chaves do localStorage), `docs/FRONTEND_DEV_CHECKLIST.md` (Fase 1 [x]),
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes; `POST /api/auth/login` do seed via proxy
+  (nginx :80) → HTTP 200
+- ADR relacionado: 0004 (executada)
+
+## 2026-08-31 — Deep Copilot (Frontend: máscara de CPF no login)
+- Ação: criado `src/frontend/src/lib/masks.ts` com `maskCpf` (dígitos → `XXX.XXX.XXX-XX`
+  progressiva); `LoginPage` aceita CPF com dígitos crus (filtra não-dígitos, máx. 11), formata ao
+  sair do campo (`onBlur`) e normaliza com `maskCpf` antes do submit (backend guarda o formato
+  mascarado — ex. `111.111.111-11`); dica de ajuda sob o campo
+- Motivo: pedido do usuário antes do commit da Fase 1
+- Arquivos alterados: `src/frontend/src/lib/masks.ts` (novo), `pages/LoginPage.tsx`,
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum

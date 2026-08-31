@@ -1,13 +1,39 @@
 import { useState, type FormEvent } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/auth'
+import { maskCpf } from '../lib/masks'
 
 export function LoginPage() {
-  const [cpf, setCpf] = useState('')
-  const [password, setPassword] = useState('')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  // CPF pré-preenchido pelo CreateAccountModal (Fase 2) via location.state.
+  const initialCpf = (location.state as { cpf?: string } | null)?.cpf ?? ''
+  const [cpf, setCpf] = useState(initialCpf)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // Próxima etapa: chamar POST /auth/login (JWT) e redirecionar para o extrato.
+    if (submitting) {
+      return
+    }
+    setError('')
+    setSubmitting(true)
+    try {
+      await login(maskCpf(cpf), password)
+      navigate('/extrato', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível entrar. Tente novamente.')
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  const inputClasses =
+    'mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40'
 
   return (
     <main className="flex min-h-svh items-center justify-center px-4">
@@ -26,9 +52,13 @@ export function LoginPage() {
               autoComplete="username"
               placeholder="000.000.000-00"
               value={cpf}
-              onChange={(event) => setCpf(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40"
+              onChange={(event) => setCpf(event.target.value.replace(/\D/g, '').slice(0, 11))}
+              onBlur={() => setCpf(maskCpf(cpf))}
+              className={inputClasses}
             />
+            <span className="mt-1 block text-xs text-muted">
+              Pode digitar só os números — o campo formata ao sair.
+            </span>
           </label>
 
           <label className="block">
@@ -39,15 +69,18 @@ export function LoginPage() {
               placeholder="Sua senha"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40"
+              className={inputClasses}
             />
           </label>
 
+          {error && <p className="text-sm text-expense">{error}</p>}
+
           <button
             type="submit"
-            className="w-full rounded-lg bg-accent px-3 py-2 font-medium text-accent-foreground transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            disabled={submitting}
+            className="w-full rounded-lg bg-accent px-3 py-2 font-medium text-accent-foreground transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Entrar
+            {submitting ? 'Entrando…' : 'Entrar'}
           </button>
         </form>
 
