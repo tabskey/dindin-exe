@@ -4,7 +4,7 @@ Controle das etapas de implementação do frontend (React 19 + Vite + TypeScript
 seguindo `docs/AGENTS.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto
 com o código, em cada fase.
 
-**Fase atual:** 3 — Infra de testes (próxima)
+**Fase atual:** 4 — Extrato mínimo (próxima)
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -71,21 +71,21 @@ com o código, em cada fase.
 
 ## Fase 3 — Infra de testes (Vitest + Testing Library, Playwright, SonarQube)
 
-- [ ] ADR 0005 marcado como Aceito (Vitest + Testing Library, Playwright e SonarQube local via
+- [x] ADR 0005 marcado como Aceito (Vitest + Testing Library, Playwright e SonarQube local via
       Docker, meta ≥ 80% de linhas).
-- [ ] Vitest + Testing Library: `vitest`, `@vitest/coverage-v8`, `@testing-library/react`,
+- [x] Vitest + Testing Library: `vitest`, `@vitest/coverage-istanbul`, `@testing-library/react`,
       `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`; `vitest.config.ts` com
       `environment: jsdom`, setup com jest-dom e `coverage.reporter` incluindo `lcov`.
-- [ ] Scripts no `package.json`: `test` (vitest run), `test:watch`, `coverage` (vitest run
+- [x] Scripts no `package.json`: `test` (vitest run), `test:watch`, `coverage` (vitest run
       --coverage), `test:e2e` (playwright test).
-- [ ] Playwright: `@playwright/test` + `playwright.config.ts` (baseURL + webServer ou uso do
+- [x] Playwright: `@playwright/test` + `playwright.config.ts` (baseURL + webServer ou uso do
       Docker); instalar browser (`npx playwright install chromium`).
-- [ ] SonarQube local: serviço `sonarqube` no `docker-compose.yml` (Community, sem conta) +
+- [x] SonarQube local: serviço `sonarqube` no `docker-compose.sonarqube.yml` (Community, sem conta) +
       `sonar-project.properties` apontando para `coverage/lcov.info`.
-- [ ] Testes de regressão do que já existe: `masks.ts` (CPF/conta), `Modal` (Esc, clique fora,
+- [x] Testes de regressão do que já existe: `masks.ts` (CPF/conta), `Modal` (Esc, clique fora,
       foco), `LoginPage` (submit, erro 401, pré-preenchimento pós-criar conta) e
       `CreateAccountModal` (validações, erro 409).
-- [ ] Critério: `npm test` verde e smoke de `test:e2e`; `npm run coverage` gera `lcov.info`.
+- [x] Critério: `npm test` verde e smoke de `test:e2e`; `npm run coverage` gera `lcov.info`.
 
 ## Fase 4 — Extrato mínimo
 

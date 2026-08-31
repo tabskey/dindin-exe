@@ -359,3 +359,32 @@
   `docs/AGENTS.md`, `README.md`
 - Testes: nenhum (documentação); frontend segue com build/lint verdes até a Fase 3
 - ADR relacionado: 0005 (Aceito); 0004 atualizado (parte de testes substituída)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 3 — Infra de testes)
+- Ação: implementada a infraestrutura de testes do frontend (ADR 0005) — Vitest 3.2.7 + Testing
+  Library (jsdom, jest-dom, user-event) com 19 testes de regressão do que já existia (masks,
+  Modal, LoginPage, CreateAccountModal); scripts `test`/`test:watch`/`coverage`/`test:e2e`;
+  Playwright com smoke E2E (tela de login renderiza; webServer sobe o dev server); cobertura
+  istanbul exportada em `coverage/lcov.info` (70,37% das linhas nos arquivos exercitados);
+  SonarQube local em `docker-compose.sonarqube.yml` (separado do compose principal para não pesar
+  o dev) + `sonar-project.properties` consumindo o lcov; eslint ignora coverage/playwright-report
+- Motivo: fase 3 do checklist do frontend — testes antes de seguir para o extrato (Fase 4)
+- Arquivos alterados: `src/frontend/` — `package.json`/`package-lock.json` (vitest 3.2.7,
+  @testing-library/*, jsdom, @playwright/test, @vitest/coverage-istanbul), `vitest.config.ts`
+  (novo), `src/test/setup.ts` (novo), `playwright.config.ts` (novo), `sonar-project.properties`
+  (novo), `e2e/login.spec.ts` (novo), testes em `src/lib/masks.test.ts`,
+  `src/components/Modal.test.tsx`, `src/components/CreateAccountModal.test.tsx`,
+  `src/pages/LoginPage.test.tsx` (novos), `eslint.config.js` (ignores de artefatos),
+  `.gitignore` (coverage, playwright-report, test-results); `docker-compose.sonarqube.yml`
+  (novo); docs: `FRONTEND_DEV_CHECKLIST.md` (Fase 3 [x]), `docs/adr/0005-testes-e-qualidade-no-frontend.md`
+  (istanbul no lugar de coverage-v8)
+- Observações: (1) vitest **4.1.11** quebra neste ambiente (Windows/Node 24/vite 8 — erro
+  "failed to find the runner" até em `describe` puro); fixado com **vitest 3.2.7** (estável,
+  suporta node 24); (2) provider v8 duplica entradas no lcov no Windows (case do path) — trocado
+  para **istanbul**; (3) istanbul com `all: true` crasha no Windows — config `all: false` (mede
+  os arquivos exercitados); (4) merge do branch 005 (código do frontend Fases 0-2) resolvido
+  nesta branch, conflitos de docs resolvidos (AGENT_LOG unificado; checklist/ADR 0004 = versão
+  do 006)
+- Testes: `npm test` 19/19 verdes; `npm run coverage` gera `lcov.info`; `npm run test:e2e` 1/1
+  (smoke); `npm run build` e `npm run lint` verdes
+- ADR relacionado: 0005 (executada)

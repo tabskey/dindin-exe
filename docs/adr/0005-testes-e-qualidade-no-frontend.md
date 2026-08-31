@@ -40,7 +40,7 @@ de qualidade com cobertura.
 
 ## Consequências
 
-- Novas devDependencies: `vitest`, `@vitest/coverage-v8`, `@testing-library/react`,
+- Novas devDependencies: `vitest`, `@vitest/coverage-istanbul`, `@testing-library/react`,
   `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`, `@playwright/test`.
 - Cobertura exportada em `coverage/lcov.info` e consumida pelo SonarQube.
 - E2E exige app + API no ar e seed carregado — documentado no AGENTS.md.
