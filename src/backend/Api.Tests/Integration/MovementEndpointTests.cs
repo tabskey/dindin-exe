@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using Application.Dtos;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Api.Tests.Integration;
@@ -47,6 +50,30 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
             new { type = 0, amount = 50, counterpartyCpf = "999.999.999-99" }, token, "cp-nope");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Credit_WithCounterpartyAccountNumber_UsesRegisteredAccountLabel()
+    {
+        var (id, _, token) = await _factory.RegisterAsync("Titular");
+        var (_, counterpartyCpf, _) = await _factory.RegisterAsync("João Teste");
+
+        string counterpartyAccountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            counterpartyAccountNumber = await db.Accounts
+                .Where(a => a.Cpf == counterpartyCpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+
+        var response = await _factory.PostAsync($"/accounts/{id}/movements",
+            new { type = 0, amount = 50, counterpartyAccountNumber }, token, "cp-num-joao");
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
+        Assert.Equal($"JOAO TESTE {ApiFactory.MaskCpf(counterpartyCpf)} CC", movement!.Counterparty);
     }
 
     [Fact]

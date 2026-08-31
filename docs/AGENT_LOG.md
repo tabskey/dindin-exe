@@ -250,3 +250,21 @@
 - Arquivos alterados: `src/frontend/src/index.css`
 - Testes: `npm run build` e `npm run lint` verdes
 - ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Backend: contraparte por número de conta)
+- Ação: adição mínima e aditiva no contrato de movimentação — `CreateMovementRequest` ganhou
+  `CounterpartyAccountNumber` (opcional); `IAccountRepository`/`AccountRepository` ganharam
+  `GetByAccountNumberAsync`; `MovementService` resolve contraparte por número (precedência) → CPF →
+  auto-depósito; `CounterpartyLabel.For` reutilizado (label continua mascarando o CPF da conta
+  encontrada); `Account.SetAccountNumber` internal para testes; sem migração (campo só de request)
+- Motivo: o modal de depósito do frontend terá "pra quem?" com CPF ou número de conta — preparação
+  aprovada pelo usuário antes de mover para o frontend
+- Arquivos alterados: `Application/Dtos/Requests.cs`, `Application/Abstractions/IAccountRepository.cs`,
+  `Infrastructure/Persistence/AccountRepository.cs`, `Application/Services/MovementService.cs`,
+  `Domain/Entities/Account.cs`, `Domain/Entities/CounterpartyLabel.cs` (doc), testes em
+  `Api.Tests/Application/TestDoubles.cs`, `MovementServiceTests.cs` (2 novos) e
+  `Integration/MovementEndpointTests.cs` (1 novo); `docs/adr/0003-contraparte-por-numero-de-conta.md`,
+  `README.md` (regra de contraparte), `docs/AGENT_LOG.md`
+- Testes: 109/109 verdes (106 + 3 novos); `dotnet build` 0 erros/0 avisos; `dotnet format
+  --verify-no-changes` limpo
+- ADR relacionado: 0003 (extensão da 0002; precedência número → CPF → auto-depósito; sem migração)

@@ -32,7 +32,18 @@ public sealed class MovementService : IMovementService
         }
 
         string counterparty;
-        if (string.IsNullOrWhiteSpace(request.CounterpartyCpf))
+        if (!string.IsNullOrWhiteSpace(request.CounterpartyAccountNumber))
+        {
+            var byAccountNumber = await _accounts.GetByAccountNumberAsync(request.CounterpartyAccountNumber.Trim(), cancellationToken);
+            if (byAccountNumber is null)
+            {
+                return Result<MovementDto>.Failure(
+                    new DomainError(DomainErrorCode.CounterpartyNotFound, "Counterparty account not found."));
+            }
+
+            counterparty = CounterpartyLabel.For(byAccountNumber);
+        }
+        else if (string.IsNullOrWhiteSpace(request.CounterpartyCpf))
         {
             // Sem contraparte informada: depósito na boca do caixa — o próprio titular.
             counterparty = CounterpartyLabel.AutoDeposit(account);
