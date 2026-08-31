@@ -1,0 +1,81 @@
+/* Fundo pixelado da tela de login.
+   Quadradinhos soltos (gerados por box-shadow) concentrados nas bordas,
+   deixando o centro — onde ficam a moeda e o card — limpo. Cores via tokens
+   do tema, então mudar a paleta continua sendo editar só o index.css. */
+
+.pixel-bg {
+  position: relative;
+  background: var(--background-login);
+  overflow: hidden;
+}
+
+/* Âncoras invisíveis no canto superior esquerdo: os pixels são as sombras.
+   As posições usam vw/vh, então o padrão acompanha o tamanho da tela. */
+.pixel-bg::before,
+.pixel-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Pixels pequenos (2px) e médios (4px), opacidade normal. */
+.pixel-bg::before {
+  width: 2px;
+  height: 2px;
+  background: var(--background-pixel);
+  box-shadow:
+    /* borda superior */
+    5vw 3vh 0 0 var(--background-pixel),
+    14vw 7vh 0 0 var(--background-pixel),
+    22vw 3vh 0 1px var(--background-pixel),
+    33vw 8vh 0 0 var(--background-pixel),
+    46vw 3vh 0 0 var(--background-pixel),
+    58vw 7vh 0 1px var(--background-pixel),
+    67vw 2vh 0 0 var(--background-pixel),
+    78vw 8vh 0 0 var(--background-pixel),
+    88vw 4vh 0 1px var(--background-pixel),
+    95vw 8vh 0 0 var(--background-pixel),
+    /* borda esquerda */
+    3vw 16vh 0 0 var(--background-pixel),
+    8vw 30vh 0 1px var(--background-pixel),
+    3vw 44vh 0 0 var(--background-pixel),
+    9vw 58vh 0 0 var(--background-pixel),
+    4vw 70vh 0 1px var(--background-pixel),
+    8vw 82vh 0 0 var(--background-pixel),
+    /* borda inferior */
+    8vw 94vh 0 0 var(--background-pixel),
+    30vw 92vh 0 1px var(--background-pixel),
+    55vw 91vh 0 0 var(--background-pixel),
+    76vw 93vh 0 0 var(--background-pixel),
+    94vw 91vh 0 1px var(--background-pixel);
+}
+
+/* Pixels médios (3px) e grandes (5px), mais marcados. */
+.pixel-bg::after {
+  width: 3px;
+  height: 3px;
+  background: var(--background-pixel-strong);
+  box-shadow:
+    /* borda direita */
+    96vw 14vh 0 0 var(--background-pixel-strong),
+    91vw 28vh 0 1px var(--background-pixel-strong),
+    97vw 42vh 0 0 var(--background-pixel-strong),
+    92vw 56vh 0 1px var(--background-pixel-strong),
+    96vw 68vh 0 0 var(--background-pixel-strong),
+    91vw 80vh 0 0 var(--background-pixel-strong),
+    /* borda inferior, cantos */
+    18vw 97vh 0 0 var(--background-pixel-strong),
+    44vw 96vh 0 1px var(--background-pixel-strong),
+    66vw 96vh 0 0 var(--background-pixel-strong),
+    86vw 97vh 0 1px var(--background-pixel-strong),
+    /* toques esparsos, fora do centro */
+    28vw 18vh 0 0 var(--background-pixel),
+    72vw 16vh 0 0 var(--background-pixel),
+    25vw 78vh 0 0 var(--background-pixel),
+    75vw 80vh 0 0 var(--background-pixel),
+    18vw 40vh 0 0 var(--background-pixel),
+    82vw 38vh 0 0 var(--background-pixel);
+}

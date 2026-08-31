@@ -64,3 +64,6 @@ nunit-*.xml
 *.db
 *.db-shm
 *.db-wal
+
+# Node.js / frontend
+node_modules/

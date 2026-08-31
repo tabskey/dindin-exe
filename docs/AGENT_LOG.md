@@ -206,6 +206,146 @@
 - Testes: 106 passando; build 0 erros/0 avisos
 - ADR relacionado: nenhum (ajuste pontual de documentação + fix de warning em teste)
 
+## 2026-08-31 — Deep Copilot (Frontend: login + tema claro/escuro)
+- Ação: frontend saiu do starter — Tailwind CSS v4 via plugin `@tailwindcss/vite`; sistema de tema
+  light/dark por classe (`.dark` no `<html>`) com tokens de cor em CSS variables (`:root`/`.dark`) mapeados
+  no `@theme inline` (trocar a paleta final = editar só as variáveis); hook `useTheme` (persistência em
+  `localStorage` `dindin-theme`, padrão = `prefers-color-scheme`) + script anti-FOUC no `index.html`;
+  `ThemeToggle` (sol/lua, acessível) e página de login (`LoginPage`: CPF + senha + botão Entrar, com
+  dica das contas de seed); `index.html` em pt-BR com título "DinDin.exe — Entrar"; removidos arquivos do
+  starter (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`)
+- Motivo: pedido do usuário — começar o frontend com Tailwind, página de login inicial e comportamento
+  light/dark; paleta final será passada depois
+- Arquivos alterados: `src/frontend/` — `package.json`/`package-lock.json` (tailwindcss,
+  @tailwindcss/vite), `vite.config.ts`, `src/index.css`, criados `src/hooks/useTheme.ts`,
+  `src/components/ThemeToggle.tsx`, `src/pages/LoginPage.tsx`; reescritos `src/App.tsx`, `index.html`;
+  removidos `src/App.css`, `src/assets/*`, `public/icons.svg`; `README.md` (status atual)
+- Testes: `npm run build` (tsc -b + vite build) e `npm run lint` — pendentes nesta entrada
+- ADR relacionado: nenhum (implementação de tela já prevista no README como próximo passo)
+
+## 2026-08-31 — Deep Copilot (Correções pós-revisão do frontend)
+- Ação: (1) proxy do Vite para a API via porta do Docker — `/api` → `http://localhost` (nginx em :80 já
+  remove o prefixo; dev e prod usam o mesmo caminho relativo, sem porta hardcoded); (2) `node_modules/`
+  adicionado ao `.gitignore` raiz (já existia no `.gitignore` do frontend); (3) corrigido erro de instalação:
+  o `npm install` do Tailwind rodou na raiz do workspace (cwd ignorado no job de background), criando
+  `package.json`/`package-lock.json`/`node_modules` órfãos na raiz e deixando o `src/frontend/package.json`
+  sem o Tailwind (quebraria o `npm ci` do Docker) — reinstalado corretamente em `src/frontend` e removidos
+  os arquivos órfãos da raiz
+- Motivo: pedido do usuário + verificação de sanidade durante a revisão
+- Arquivos alterados: `src/frontend/vite.config.ts` (proxy), `.gitignore` (raiz), `src/frontend/package.json`
+  e `package-lock.json` (tailwindcss/@tailwindcss/vite ^4.3.3); removidos `package.json`,
+  `package-lock.json` e `node_modules/` da raiz
+- Testes: `npm run build` (tsc + vite) e `npm run lint` verdes; build passa só com deps do frontend
+- ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Frontend: paleta oficial aplicada)
+- Ação: tokens de cor em `src/frontend/src/index.css` atualizados para a paleta final do projeto —
+  `--background` `#FFF9E8`/`#1A1714`, `--surface` `#FFFFFF`/`#25201B`, `--border` `#E7C875`/`#494038`,
+  `--foreground` `#25201B`/`#F7F0E3`, `--muted` `#6B5B4B`/`#B8AA98`, `--accent` `#FFB12B` (idêntico nos
+  dois temas, `--accent-foreground` `#25201B`); adicionados papéis das próximas telas: `--balance-bg`
+  (`#FFF0BD`/`#4A3518`), `--income-bg`/`--income` (`#E5F3E5`/`#4C9A5F` e `#193522`/`#4CAF60`),
+  `--expense-bg`/`--expense` (`#FBE4DC`/`#CF5B2F` e `#3D2119`/`#CF5B2F`) — mapeados no `@theme inline`
+  (`bg-balance-bg`, `bg-income`, `text-income`, `bg-expense`, `text-expense`, etc.)
+- Motivo: paleta final entregue pelo usuário (substitui a provisória neutra)
+- Arquivos alterados: `src/frontend/src/index.css`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Backend: contraparte por número de conta)
+- Ação: adição mínima e aditiva no contrato de movimentação — `CreateMovementRequest` ganhou
+  `CounterpartyAccountNumber` (opcional); `IAccountRepository`/`AccountRepository` ganharam
+  `GetByAccountNumberAsync`; `MovementService` resolve contraparte por número (precedência) → CPF →
+  auto-depósito; `CounterpartyLabel.For` reutilizado (label continua mascarando o CPF da conta
+  encontrada); `Account.SetAccountNumber` internal para testes; sem migração (campo só de request)
+- Motivo: o modal de depósito do frontend terá "pra quem?" com CPF ou número de conta — preparação
+  aprovada pelo usuário antes de mover para o frontend
+- Arquivos alterados: `Application/Dtos/Requests.cs`, `Application/Abstractions/IAccountRepository.cs`,
+  `Infrastructure/Persistence/AccountRepository.cs`, `Application/Services/MovementService.cs`,
+  `Domain/Entities/Account.cs`, `Domain/Entities/CounterpartyLabel.cs` (doc), testes em
+  `Api.Tests/Application/TestDoubles.cs`, `MovementServiceTests.cs` (2 novos) e
+  `Integration/MovementEndpointTests.cs` (1 novo); `docs/adr/0003-contraparte-por-numero-de-conta.md`,
+  `README.md` (regra de contraparte), `docs/AGENT_LOG.md`
+- Testes: 109/109 verdes (106 + 3 novos); `dotnet build` 0 erros/0 avisos; `dotnet format
+  --verify-no-changes` limpo
+- ADR relacionado: 0003 (extensão da 0002; precedência número → CPF → auto-depósito; sem migração)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 0 — checklist + ADR 0004)
+- Ação: planejamento do frontend registrado — criado `docs/FRONTEND_DEV_CHECKLIST.md` (6 fases:
+  ADR, infra de API/sessão, modal de criar conta, extrato mínimo, movimentação, validação final) e
+  `docs/adr/0004-frontend-sessao-e-client-de-api.md` (sem router — troca por estado; `AuthContext`
+  com token/conta em `localStorage dindin-token`; client `api.ts` sobre `/api` com parse de
+  `{"error": ...}`; idempotência `crypto.randomUUID()` por tentativa; modal e máscaras próprios;
+  sem framework de testes no frontend — build/lint + fluxo manual)
+- Motivo: aprovação do usuário ao planejamento (contraparte por número já commitada na branch 005)
+- Arquivos alterados: `docs/FRONTEND_DEV_CHECKLIST.md`, `docs/adr/0004-...md`, `docs/AGENT_LOG.md`
+- Testes: n/a (docs) — build/lint do frontend seguem verdes
+- ADR relacionado: 0004 (pendente de aprovação para iniciar a Fase 1)
+
+## 2026-08-31 — Deep Copilot (Frontend: revisão da ADR 0004 — incluir React Router)
+- Ação: a pedido do usuário, a decisão de navegação passou de "sem router (troca por estado)" para
+  **react-router** (rotas `/login` e `/extrato` com guard). Justificativa registrada na ADR como
+  decisão de consistência e demonstração de nível alto (URL por tela, deep-link, botão voltar,
+  padrão de mercado), explicitamente NÃO over-engineering (uso simples: 2 rotas + guard)
+- Motivo: preferência do usuário — projeto é vitrine de nível alto
+- Arquivos alterados: `docs/adr/0004-...md` (reescrito), `docs/FRONTEND_DEV_CHECKLIST.md`
+  (escopo/Fase 0/Fase 1), `docs/AGENT_LOG.md`
+- Testes: n/a (docs)
+- ADR relacionado: 0004 (aguardando aprovação para Fase 1)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 1 — infra de API e sessão)
+- Ação: instalado `react-router-dom`; rotas `/login` (pública) e `/extrato` (protegida) com
+  redirects no `App`; `src/lib/api.ts` (client fetch sobre `/api`, `Authorization: Bearer`, parse
+  de `{"error": ...}`, `ApiError` por status, DTOs espelhando o backend, `login`/`createAccount`/
+  `getBalance`/`getMovements`/`createMovement` com suporte a `Idempotency-Key`); `AuthContext`
+  (`src/context/auth.ts` + `AuthProvider.tsx`, token em `dindin-token` e conta em
+  `dindin-account`, logout automático em 401 de rota autenticada); `LoginPage` com submit real
+  (loading, erro inline, navega para `/extrato`, pré-preenche CPF via `location.state`); `main.tsx`
+  com `BrowserRouter`; `ExtratoPage` esqueleto com "Sair" (Fase 3 preenche)
+- Motivo: aprovação da ADR 0004 (incluindo react-router como decisão de consistência)
+- Arquivos alterados: `src/frontend/package.json`/`package-lock.json` (react-router-dom),
+  `src/frontend/src/lib/api.ts`, `src/frontend/src/context/auth.ts`, `context/AuthProvider.tsx`,
+  `pages/LoginPage.tsx`, `pages/ExtratoPage.tsx` (esqueleto), `App.tsx`, `main.tsx`,
+  `docs/adr/0004-...md` (chaves do localStorage), `docs/FRONTEND_DEV_CHECKLIST.md` (Fase 1 [x]),
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes; `POST /api/auth/login` do seed via proxy
+  (nginx :80) → HTTP 200
+- ADR relacionado: 0004 (executada)
+
+## 2026-08-31 — Deep Copilot (Frontend: máscara de CPF no login)
+- Ação: criado `src/frontend/src/lib/masks.ts` com `maskCpf` (dígitos → `XXX.XXX.XXX-XX`
+  progressiva); `LoginPage` aceita CPF com dígitos crus (filtra não-dígitos, máx. 11), formata ao
+  sair do campo (`onBlur`) e normaliza com `maskCpf` antes do submit (backend guarda o formato
+  mascarado — ex. `111.111.111-11`); dica de ajuda sob o campo
+- Motivo: pedido do usuário antes do commit da Fase 1
+- Arquivos alterados: `src/frontend/src/lib/masks.ts` (novo), `pages/LoginPage.tsx`,
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 2 — modal base + criar conta)
+- Ação: `src/components/Modal.tsx` (acessível: Esc/backdrop fecham, `aria-modal`, foco no primeiro
+  campo, trava de scroll, portal); `maskAccountNumber` em `lib/masks.ts`; `CreateAccountModal`
+  (nome/CPF mascarado/senha ≥ 6, validações locais, 409 inline, chave de idempotência por
+  tentativa, sucesso → fecha + pré-preenche CPF do login via `onCreated`); link "Criar conta" na
+  `LoginPage` (pré-preenchimento por callback — mais simples que `location.state`, evita
+  setState-em-effect do react-hooks)
+- Motivo: fase 2 do checklist do frontend
+- Arquivos alterados: `components/Modal.tsx`, `components/CreateAccountModal.tsx` (novos),
+  `lib/masks.ts` (+maskAccountNumber), `pages/LoginPage.tsx`, `docs/FRONTEND_DEV_CHECKLIST.md`,
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes (2 erros do react-hooks v6 corrigidos: ref em
+  render e setState em effect)
+- ADR relacionado: 0004
+
+## 2026-08-31 — Deep Copilot (Frontend: ajustes de UI pós-Fase 2)
+- Ação: header do `ExtratoPage` ganhou `pr-14` para o botão "Sair" não colidir com o toggle de
+  tema (fixo no canto superior direito); `Modal` ganhou `backdrop-blur-sm` no overlay (efeito blur
+  na página ao abrir)
+- Motivo: apontamentos do usuário antes da PR
+- Arquivos alterados: `pages/ExtratoPage.tsx`, `components/Modal.tsx`, `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum
+
 ## 2026-08-31 — Deep Copilot (Testes no frontend — ADR 0005 + checklist)
 - Ação: aprovado pelo usuário o plano de testes do frontend e aplicados os ajustes de documentação —
   novo ADR 0005 (Vitest + Testing Library, Playwright, SonarQube local via Docker, cobertura ≥ 80%);

@@ -36,6 +36,8 @@ public class Account
 
     internal void SetId(long id) => Id = id;
 
+    internal void SetAccountNumber(string accountNumber) => AccountNumber = accountNumber;
+
     internal void SetBalance(decimal balance) => Balance = balance;
 
     public void SetAvatar(byte[] avatar, string contentType)

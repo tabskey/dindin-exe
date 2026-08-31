@@ -10,7 +10,7 @@
 
 O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um frontend em **React 19 + Vite + TypeScript**.
 
-> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend ainda é o starter do Vite: as telas de login e extrato são o próximo passo. O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
+> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend já tem a página de login com tema claro/escuro (Tailwind CSS); a tela de extrato e a integração com a API são os próximos passos. O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
 
 A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
 
@@ -131,7 +131,7 @@ O token deve ser enviado como `Authorization: Bearer <jwt>` nas rotas protegidas
 | ------ | -------------------------- | ---- | ---------------------------------------------------------------------------- |
 | `POST` | `/auth/login`              | —    | Autentica por CPF + senha e devolve JWT                                      |
 | `POST` | `/accounts`                | —    | Cria uma conta (`Idempotency-Key` opcional)                                  |
-| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf` opcional) |
+| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf`/`counterpartyAccountNumber` opcionais) |
 | `GET`  | `/accounts/{id}/balance`   | ✔    | Consulta o saldo disponível                                                  |
 | `GET`  | `/accounts/{id}/movements` | ✔    | Consulta o histórico de movimentações paginado                               |
 | `POST` | `/accounts/{id}/avatar`    | ✔    | Envia avatar (multipart, JPEG/PNG/WebP até 512 KB)                           |
@@ -156,9 +156,10 @@ Content-Type: application/json
 
 **Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
 
-- Sem `counterpartyCpf` → depósito na boca do caixa: `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
+- Sem contraparte → depósito na boca do caixa: `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
 - Com `counterpartyCpf` → resolve a conta pelo CPF e grava o label (ex.: `BRUNO TESTE 222-22 CC`).
-- CPF inexistente → erro `400`.
+- Com `counterpartyAccountNumber` → resolve a conta pelo número (ex.: `00315-41`); tem precedência sobre o CPF.
+- CPF ou conta inexistente → erro `400`.
 
 A regra principal é simples:
 
