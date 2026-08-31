@@ -4,7 +4,7 @@ Controle das etapas de implementação da API (Minimal API .NET 10), seguindo `d
 `docs/ARCHITECTURE.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto com o
 código, em cada fase.
 
-**Fase atual:** Fase 6 — Docker e documentação
+**Fase atual:** Concluído — Fases 0 a 6
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -89,7 +89,10 @@ código, em cada fase.
 
 ## Fase 6 — Docker e documentação
 
-- [ ] Volume SQLite no `docker-compose.yml` (persistência, ARCHITECTURE.md §9) + rebuild + verificação via proxy.
-- [ ] Atualizar `README.md`: mover itens implementados para fora de "Planejado".
-- [ ] Registrar todo o andamento em `docs/AGENT_LOG.md`.
-- [ ] Critério: `docker compose up --build` com os dois serviços e API respondendo.
+- [x] Volume SQLite (`sqlite-data:/data`) no `docker-compose.yml` (persistência, ARCHITECTURE.md §9);
+      Dockerfile movido para `src/backend/Dockerfile` (contexto com todos os projetos da solution);
+      rebuild + verificação via proxy.
+- [x] Atualizar `README.md`: estado real (backend implementado, endpoints, seed, testes, 97,1% cobertura).
+- [x] Registrar todo o andamento em `docs/AGENT_LOG.md`.
+- [x] Critério: `docker compose up --build` com os dois serviços e API respondendo via
+      `http://localhost/api` (login 200, saldo, crédito 201; restart preserva saldo e idempotência).

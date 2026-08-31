@@ -128,3 +128,51 @@
   `dotnet build` 0 erros/0 avisos; `dotnet format` limpo; gate de 80% verde via
   `-p:CollectCoverage=true -p:Threshold=80` (equivalente ao CI=true do GitHub Actions)
 - ADR relacionado: nenhum; checklist atualizado para Fase 6
+
+## 2026-08-31 00:10 — Deep Copilot (Fase 6 — Docker e documentação)
+- Ação: persistência do SQLite em container — volume nomeado `sqlite-data:/data` no `docker-compose.yml`
+  (o compose já apontava `ConnectionStrings__DefaultConnection` para `/data/dindin.db`, mas não havia
+  volume montado, então o banco era descartado a cada restart); Dockerfile da Api movido de
+  `Api/Dockerfile` (contexto só da pasta Api, quebrado para a solution com 4 projetos — falhava no
+  publish por falta das referências Application/Domain/Infrastructure) para `src/backend/Dockerfile`
+  com contexto `./src/backend`, restore via `dotnet restore Api/Api.csproj` (o restore da solution
+  falhava porque o `Api.Tests` é excluído do contexto de build) e `.dockerignore` novo (`**/bin`,
+  `**/obj`, `**/Api.Tests`, `*.db*`)
+- Motivo: fase 6 do checklist — persistência entre reinícios + build real da solution multi-projeto
+- Arquivos alterados: `docker-compose.yml` (volume), criados `src/backend/Dockerfile` e
+  `src/backend/.dockerignore`; removido `src/backend/Api/Dockerfile` (quebrado); `README.md` reescrito
+  do estado "planejado" para o implementado (endpoints reais com `counterpartyCpf`/avatar, seed
+  Ana/Bruno/Carlos, testes 102/cobertura 97,1%, volume SQLite); `ARCHITECTURE.md` §10 corrigido
+  (SQLite em arquivo temporário, não in-memory)
+- Testes: `docker compose up --build` com os dois serviços; verificação via proxy
+  `http://localhost/api`: login 200 (Ana), saldo inicial 1050, crédito 10 → 201 (contraparte
+  `AUTO-DEPOSITO 111-11 CC`), saldo 1060; `docker compose down` + `up -d` sem rebuild → saldo
+  permanece 1060 e replay da `Idempotency-Key` retorna a mesma movimentação (id 9) sem duplicar
+- ADR relacionado: nenhum; checklist concluído — Fases 0 a 6
+
+## 2026-08-31 00:40 — Deep Copilot (Hardening pós-revisão)
+- Ação: correções de robustez apontadas na revisão de código — (1) atomicidade: novo
+  `IUnitOfWork`/`UnitOfWork` e o `IdempotencyFilter` virou a fronteira transacional das escritas
+  (movimentação/auditoria/registro de idempotência commitam juntos ou desfazem juntos);
+  (2) idempotência: replay agora valida path + hash SHA-256 do corpo (divergência → 409) e a
+  corrida de chaves iguais concorrentes é resolvida no commit (violação de chave única → rollback
+  e resposta da vencedora); (3) `SqliteBusyTimeoutInterceptor` movido para Infrastructure e
+  registrado no startup (antes só nos testes — produção estouraria SQLITE_BUSY em concorrência);
+  (4) campos nulos (`cpf`/`name`/`password`) viram 400/401 via `InvalidRequest`, não mais
+  NullReferenceException/500; handler global de exceção devolve JSON 500 + log; (5) auditoria
+  ampliada: `login` e `update-avatar` auditados, payload da movimentação agora inclui a
+  contraparte; avatar ganhou `IdempotencyFilter` opcional; (6) `ILogger` nos services e supressão
+  do SQL do EF (`Microsoft.EntityFrameworkCore.Database.Command: Warning`) em produção
+- Segredo: chave JWT removida do `appsettings.json` e do repositório — config vem da variável de
+  ambiente `Jwt__Key`, injetada via `.env` (gitignored, `env_file` no compose) e documentada em
+  `.env.example`; startup valida a presença da chave com mensagem clara; testes injetam chave
+  própria via `UseSetting`
+- Arquivos: criados `IUnitOfWork.cs`, `UnitOfWork.cs`, `SqliteBusyTimeoutInterceptor.cs`,
+  `.env.example`, `Api.Tests/Integration/IdempotencyTests.cs`; editados `IdempotencyFilter.cs`,
+  `AuditedAccountService.cs`, `AuditedMovementService.cs`, `AccountService.cs`, `MovementService.cs`,
+  `Program.cs`, `appsettings.json`, `docker-compose.yml`, `DomainErrorCode.cs`, `ApiFactory.cs`,
+  `README.md`
+- Testes: 106 passando (4 novos: replay com corpo diferente → 409, `cpf` nulo → 400/401, auditoria
+  grava contraparte); `dotnet build` 0 erros/0 avisos; `dotnet format` limpo; gate de cobertura verde
+- ADR relacionado: nenhum; pendência: remover a chave do histórico do git (003/004) — ver
+  `docs/AGENT_LOG.md` (nota de segurança)

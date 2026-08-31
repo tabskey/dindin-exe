@@ -127,8 +127,10 @@ docker compose up --build
 ## 10. Testes
 
 - **Testes unitários** no domínio — foco na regra de saldo negativo e nas strategies de crédito/débito.
-- **Testes de integração** na API usando `WebApplicationFactory` + SQLite in-memory, cobrindo os fluxos
-  completos de criação de conta, login, movimentação e consulta.
+- **Testes de integração** na API usando `WebApplicationFactory` + SQLite em arquivo temporário (o
+  banco em memória compartilha uma única conexão e não suporta requisições concorrentes), cobrindo os
+  fluxos completos de criação de conta, login, movimentação, saldo, histórico, idempotência e débitos
+  concorrentes.
 
 ## 11. Decisões de escopo
 
