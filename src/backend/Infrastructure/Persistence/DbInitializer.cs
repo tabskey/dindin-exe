@@ -33,21 +33,21 @@ public static class DbInitializer
         db.Accounts.AddRange(ana, bruno, carlos);
         db.SaveChanges();
 
-        AddMovement(db, ana, MovementType.Credit, 1000m, CounterpartyLabel.AutoDeposit(ana));
-        AddMovement(db, ana, MovementType.Credit, 500m, CounterpartyLabel.For(carlos));
-        AddMovement(db, ana, MovementType.Debit, 300m, CounterpartyLabel.For(bruno));
-        AddMovement(db, ana, MovementType.Debit, 150m, CounterpartyLabel.For(carlos));
+        AddMovement(db, ana, MovementType.Credit, 100000, CounterpartyLabel.AutoDeposit(ana));
+        AddMovement(db, ana, MovementType.Credit, 50000, CounterpartyLabel.For(carlos));
+        AddMovement(db, ana, MovementType.Debit, 30000, CounterpartyLabel.For(bruno));
+        AddMovement(db, ana, MovementType.Debit, 15000, CounterpartyLabel.For(carlos));
 
-        AddMovement(db, bruno, MovementType.Credit, 200m, CounterpartyLabel.For(ana));
-        AddMovement(db, bruno, MovementType.Debit, 120m, CounterpartyLabel.For(carlos));
+        AddMovement(db, bruno, MovementType.Credit, 20000, CounterpartyLabel.For(ana));
+        AddMovement(db, bruno, MovementType.Debit, 12000, CounterpartyLabel.For(carlos));
 
-        AddMovement(db, carlos, MovementType.Credit, 100m, CounterpartyLabel.For(ana));
-        AddMovement(db, carlos, MovementType.Debit, 100m, CounterpartyLabel.For(bruno));
+        AddMovement(db, carlos, MovementType.Credit, 10000, CounterpartyLabel.For(ana));
+        AddMovement(db, carlos, MovementType.Debit, 10000, CounterpartyLabel.For(bruno));
 
         db.SaveChanges();
     }
 
-    private static void AddMovement(AppDbContext db, Account account, MovementType type, decimal amount, string? counterparty = null)
+    private static void AddMovement(AppDbContext db, Account account, MovementType type, long amount, string? counterparty = null)
     {
         var movement = Movement.Create(account.Id, type, amount, counterparty).Value!;
         account.ApplyMovement(MovementStrategies.For(type), amount);

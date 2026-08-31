@@ -169,7 +169,7 @@ export function ExtratoPage() {
           <section className="mt-6 w-full">
             <div className="rounded-2xl border border-border bg-balance-bg p-6">
               <p className="text-sm text-muted">Saldo</p>
-              <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format(balance ?? 0)}</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format((balance ?? 0) / 100)}</p>
             </div>
 
             <h2 className="mb-2 mt-8 text-sm font-semibold text-muted">Movimentações</h2>
@@ -195,7 +195,7 @@ export function ExtratoPage() {
                         movement.type === 0 ? 'text-income' : 'text-expense'
                       }`}
                     >
-                      {movement.type === 0 ? '+' : '-'} {brl.format(movement.amount)}
+                      {movement.type === 0 ? '+' : '-'} {brl.format(movement.amount / 100)}
                     </span>
                   </li>
                 ))

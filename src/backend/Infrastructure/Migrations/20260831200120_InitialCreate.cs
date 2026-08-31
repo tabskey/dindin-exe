@@ -22,9 +22,11 @@ namespace Infrastructure.Migrations
                     Cpf = table.Column<string>(type: "TEXT", maxLength: 14, nullable: false),
                     AccountType = table.Column<int>(type: "INTEGER", nullable: false),
                     PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    Balance = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    Balance = table.Column<long>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "BLOB", nullable: false)
+                    RowVersion = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    Avatar = table.Column<byte[]>(type: "BLOB", nullable: true),
+                    AvatarContentType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -72,8 +74,9 @@ namespace Infrastructure.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     AccountId = table.Column<long>(type: "INTEGER", nullable: false),
                     Type = table.Column<int>(type: "INTEGER", nullable: false),
-                    Amount = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Amount = table.Column<long>(type: "INTEGER", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Counterparty = table.Column<string>(type: "TEXT", maxLength: 120, nullable: true)
                 },
                 constraints: table =>
                 {

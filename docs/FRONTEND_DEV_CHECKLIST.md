@@ -124,6 +124,10 @@ com o código, em cada fase.
       componente do modal; fluxo real no navegador fica para a Fase 6); saque com saldo
       insuficiente → erro amigável sem quebrar o extrato; `npm test` verdes.
 
+- [x] Valores monetários em centavos inteiros (ADR 0006): backend `Amount`/`Balance` e DTOs como
+      `long` (centavos), SQLite `INTEGER`; frontend `maskBRL` centavos-based + `parseBRLToCents`
+      (exibição divide por 100); migração recriada — bancos dev recriáveis (`docker compose down -v`).
+
 ## Fase 6 — Validação final e documentação
 
 - [ ] Fluxo manual completo no Docker: `docker compose up --build` (imagem do frontend nova) e

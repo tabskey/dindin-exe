@@ -543,3 +543,26 @@
 - Testes: `npm test` 45/45 verdes (32 → 45: +9 MovementModal, +3 masks, +1 ExtratoPage);
   `npm run build` e `npm run lint` verdes; verificação real no navegador/Docker fica para a Fase 6
 - ADR relacionado: 0003 (contraparte por CPF/número), 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Backend + Frontend: valores monetários em centavos inteiros)
+- Ação: dinheiro passou a ser inteiro de centavos de ponta a ponta — `Movement.Amount`/`Account.Balance`
+  e DTOs (`CreateMovementRequest`, `MovementDto`, `BalanceDto`) de `decimal` para `long`; strategies e
+  `Movement.Create` recebem `long`; removido `HasPrecision(18, 2)`. Seed em centavos (Ana 1050,00 →
+  105000 etc.). Migração recriada (`InitialCreate` única) porque SQLite não altera tipo de coluna.
+  Frontend: `maskBRL` centavos-based (cada dígito = centavo, sempre duas casas) + `parseBRLToCents`
+  (remove `parseBRL`); `ExtratoPage`/`MovementModal` dividem por 100 na exibição (`Intl.NumberFormat`).
+- Motivo: eliminar float (arredondamento) e a ambiguidade da máscara decimal; SQLite passou de `TEXT`
+  para `INTEGER` nos valores monetários
+- Arquivos alterados: `src/backend/Domain/Entities/{Movement,Account}.cs`,
+  `src/backend/Domain/Movements/*.cs`, `src/backend/Application/Dtos/{Requests,Responses}.cs`,
+  `src/backend/Infrastructure/Persistence/{AppDbContext,DbInitializer}.cs`, migrações recriadas em
+  `src/backend/Infrastructure/Migrations/`; testes backend (Debit/Credit/Movement/MovementService/
+  Idempotency/Persistence) em centavos; frontend `src/frontend/src/lib/{masks.ts,masks.test.ts,api.ts}`,
+  `src/frontend/src/components/{MovementModal.tsx,MovementModal.test.tsx}`,
+  `src/frontend/src/pages/{ExtratoPage.tsx,ExtratoPage.test.tsx}`; criado `docs/adr/0006-*`; `README.md`
+- Observações: (1) bancos dev existentes precisam ser recriados (`docker compose down -v` ou apagar
+  `dindin.db`) — o seed repopula; (2) a API agora devolve `amount`/`balance` inteiros (ex.: R$ 150,00
+  → `15000`); (3) `apply_patch` sem números de linha (`@@`) não aplica — usar cabeçalhos `@@ -x,y +x,y @@`
+- Testes: backend `dotnet test` 109/109 verdes; frontend `npm test` 46/46, `npm run lint` e
+  `npm run build` verdes
+- ADR relacionado: 0006 (Aceito)

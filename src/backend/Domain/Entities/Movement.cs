@@ -7,13 +7,13 @@ public class Movement
     public long Id { get; private set; }
     public long AccountId { get; private set; }
     public MovementType Type { get; private set; }
-    public decimal Amount { get; private set; }
+    public long Amount { get; private set; }
     public DateTime Timestamp { get; private set; }
     public string? Counterparty { get; private set; }
 
     private Movement() { } // EF Core
 
-    public static Result<Movement> Create(long accountId, MovementType type, decimal amount, string? counterparty = null)
+    public static Result<Movement> Create(long accountId, MovementType type, long amount, string? counterparty = null)
     {
         if (amount <= 0)
         {

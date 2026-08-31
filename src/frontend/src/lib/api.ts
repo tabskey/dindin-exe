@@ -17,7 +17,7 @@ export interface LoginResponse {
 
 export interface BalanceDto {
   accountId: number
-  balance: number
+  balance: number // saldo em centavos (inteiro)
 }
 
 export type MovementType = 0 | 1 // 0 = crédito (entrada), 1 = débito (saída)
@@ -26,7 +26,7 @@ export interface MovementDto {
   id: number
   accountId: number
   type: MovementType
-  amount: number
+  amount: number // valor em centavos (inteiro)
   timestamp: string
   counterparty: string | null
 }
@@ -40,7 +40,7 @@ export interface MovementHistoryDto {
 
 export interface CreateMovementRequest {
   type: MovementType
-  amount: number
+  amount: number // valor em centavos (inteiro)
   counterpartyCpf?: string
   counterpartyAccountNumber?: string
 }

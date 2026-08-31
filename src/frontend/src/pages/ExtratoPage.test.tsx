@@ -37,14 +37,14 @@ const account = {
 }
 
 const movements: MovementDto[] = [
-  { id: 1, accountId: 1, type: 0, amount: 100.5, timestamp: '2026-08-30T15:00:00Z', counterparty: 'João' },
-  { id: 2, accountId: 1, type: 0, amount: 250, timestamp: '2026-08-29T15:00:00Z', counterparty: null },
-  { id: 3, accountId: 1, type: 0, amount: 40.25, timestamp: '2026-08-28T15:00:00Z', counterparty: 'Maria' },
-  { id: 4, accountId: 1, type: 0, amount: 860, timestamp: '2026-08-27T15:00:00Z', counterparty: null },
-  { id: 5, accountId: 1, type: 1, amount: 35.9, timestamp: '2026-08-26T15:00:00Z', counterparty: 'Padaria' },
-  { id: 6, accountId: 1, type: 1, amount: 120, timestamp: '2026-08-25T15:00:00Z', counterparty: 'Mercado' },
-  { id: 7, accountId: 1, type: 1, amount: 12.75, timestamp: '2026-08-24T15:00:00Z', counterparty: 'Farmácia' },
-  { id: 8, accountId: 1, type: 1, amount: 60, timestamp: '2026-08-23T15:00:00Z', counterparty: null },
+  { id: 1, accountId: 1, type: 0, amount: 10050, timestamp: '2026-08-30T15:00:00Z', counterparty: 'João' },
+  { id: 2, accountId: 1, type: 0, amount: 25000, timestamp: '2026-08-29T15:00:00Z', counterparty: null },
+  { id: 3, accountId: 1, type: 0, amount: 4025, timestamp: '2026-08-28T15:00:00Z', counterparty: 'Maria' },
+  { id: 4, accountId: 1, type: 0, amount: 86000, timestamp: '2026-08-27T15:00:00Z', counterparty: null },
+  { id: 5, accountId: 1, type: 1, amount: 3590, timestamp: '2026-08-26T15:00:00Z', counterparty: 'Padaria' },
+  { id: 6, accountId: 1, type: 1, amount: 12000, timestamp: '2026-08-25T15:00:00Z', counterparty: 'Mercado' },
+  { id: 7, accountId: 1, type: 1, amount: 1275, timestamp: '2026-08-24T15:00:00Z', counterparty: 'Farmácia' },
+  { id: 8, accountId: 1, type: 1, amount: 6000, timestamp: '2026-08-23T15:00:00Z', counterparty: null },
 ]
 
 const history = { items: movements, page: 1, pageSize: 20, total: 8 }
@@ -58,7 +58,7 @@ beforeEach(() => {
     logout: vi.fn(),
   })
   mockNavigate.mockReturnValue(vi.fn())
-  mockGetBalance.mockResolvedValue({ accountId: 1, balance: 1250.5 })
+  mockGetBalance.mockResolvedValue({ accountId: 1, balance: 125050 })
   mockGetMovements.mockResolvedValue(history)
   mockGetAvatar.mockResolvedValue(null)
   // jsdom não implementa object URLs — stub para o caso de avatar presente.
@@ -109,7 +109,7 @@ describe('ExtratoPage', () => {
     expect(screen.getByText('Carregando…')).toBeInTheDocument()
 
     await act(async () => {
-      resolveBalance({ accountId: 1, balance: 1250.5 })
+      resolveBalance({ accountId: 1, balance: 125050 })
     })
     expect(await screen.findByText(/1\.250,50/)).toBeInTheDocument()
   })

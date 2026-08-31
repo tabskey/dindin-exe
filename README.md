@@ -147,12 +147,12 @@ Content-Type: application/json
 
 {
   "type": 0,
-  "amount": 150.00,
+  "amount": 15000,
   "counterpartyCpf": "222.222.222-22"
 }
 ```
 
-`type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
+`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
 
 **Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
 
@@ -192,13 +192,13 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**106 testes, todos verdes** (`dotnet test`):
+**109 testes, todos verdes** (`dotnet test`):
 
-### Testes unitários (80)
+### Testes unitários
 
 Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, contraparte, auditoria, idempotência, seed e migrações.
 
-### Testes de integração (26)
+### Testes de integração
 
 `WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 

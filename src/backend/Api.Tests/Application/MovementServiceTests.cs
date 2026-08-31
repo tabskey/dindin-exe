@@ -16,7 +16,7 @@ public class MovementServiceTests
 
     public MovementServiceTests() => _service = new MovementService(_accounts, _movements, NullLogger<MovementService>.Instance);
 
-    private Account AddAccount(long id, decimal balance)
+    private Account AddAccount(long id, long balance)
     {
         var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
         account.SetId(id);
@@ -76,7 +76,7 @@ public class MovementServiceTests
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    public async Task CreateAsync_WithNonPositiveAmount_Fails(decimal amount)
+    public async Task CreateAsync_WithNonPositiveAmount_Fails(long amount)
     {
         AddAccount(1, 100);
 
@@ -185,7 +185,7 @@ public class MovementServiceTests
         AddAccount(1, 100);
         for (var i = 0; i < 5; i++)
         {
-            await _movements.AddAsync(Movement.Create(1, MovementType.Credit, 10m + i).Value!);
+            await _movements.AddAsync(Movement.Create(1, MovementType.Credit, 10L + i).Value!);
         }
 
         var result = await _service.GetHistoryAsync(1, page: 1, pageSize: 2);

@@ -7,7 +7,7 @@ public sealed class DebitStrategy : IMovementStrategy
 {
     public MovementType Type => MovementType.Debit;
 
-    public Result Apply(Account account, decimal amount)
+    public Result Apply(Account account, long amount)
     {
         if (amount <= 0)
         {

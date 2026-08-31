@@ -32,11 +32,11 @@ Idempotency-Key: create-account-1
   "password": "senha123"
 }
 
-### Saldo (Ana — seed 1050)
+### Saldo (Ana — seed 105000 centavos / R$ 1050,00)
 GET {{Api_HostAddress}}/accounts/1/balance
 Authorization: Bearer {{loginAna.response.body.token}}
 
-### Crédito de 50 vindo do Bruno (Idempotency-Key obrigatória;
+### Crédito de R$ 50,00 (5000 centavos) vindo do Bruno (Idempotency-Key obrigatória;
 ### CounterpartyCpf opcional — ausente vira "AUTO-DEPOSITO {NNN-NN} CC")
 POST {{Api_HostAddress}}/accounts/1/movements
 Authorization: Bearer {{loginAna.response.body.token}}
@@ -45,7 +45,7 @@ Idempotency-Key: movement-1
 
 {
   "type": 0,
-  "amount": 50,
+  "amount": 5000,
   "counterpartyCpf": "222.222.222-22"
 }
 
@@ -57,11 +57,11 @@ Idempotency-Key: movement-1
 
 {
   "type": 0,
-  "amount": 50,
+  "amount": 5000,
   "counterpartyCpf": "222.222.222-22"
 }
 
-### Crédito em espécie na boca do caixa — sem CounterpartyCpf
+### Crédito em espécie (R$ 25,00 / 2500 centavos) na boca do caixa — sem CounterpartyCpf
 POST {{Api_HostAddress}}/accounts/1/movements
 Authorization: Bearer {{loginAna.response.body.token}}
 Content-Type: application/json
@@ -69,7 +69,7 @@ Idempotency-Key: movement-cash
 
 {
   "type": 0,
-  "amount": 25
+  "amount": 2500
 }
 
 ### Débito acima do saldo — deve falhar com 400

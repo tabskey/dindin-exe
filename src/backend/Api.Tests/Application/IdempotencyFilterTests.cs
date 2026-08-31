@@ -36,7 +36,7 @@ public class IdempotencyFilterTests
     private static EndpointFilterDelegate PassThrough() =>
         _ => new ValueTask<object?>(Results.Ok(new { ok = true }));
 
-    private static CreateMovementRequest Request(decimal amount = 10) => new(MovementType.Credit, amount);
+    private static CreateMovementRequest Request(long amount = 10) => new(MovementType.Credit, amount);
 
     private static string HashOf(object request) =>
         Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(request, JsonOptions)));

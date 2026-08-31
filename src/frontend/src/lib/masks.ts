@@ -27,32 +27,25 @@ export function maskAccountNumber(value: string): string {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`
 }
 
-// Moeda BRL: reais como digitados + vírgula para centavos → "1.234,56".
-// Ex.: "50" → "50"; "50,5" → "50,5"; "1234567" → "1.234.567". Com complete=true
-// os centavos são completados ("50" → "50,00"; "50,5" → "50,50"). Limite de 10
-// dígitos nos reais (R$ 9.999.999.999,99 — o teto decimal(18,2) do backend é maior).
-export function maskBRL(value: string, complete = false): string {
-  const cleaned = value.replace(/[^\d,]/g, '')
-  if (!cleaned) {
+// Moeda BRL centavos-based: cada dígito digitado é um centavo (o backend trabalha
+// com centavos inteiros). "1" → "0,01"; "12" → "0,12"; "123" → "1,23";
+// "123456" → "1.234,56". Limite de 12 dígitos (R$ 9.999.999.999,99).
+export function maskBRL(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 12)
+  if (!digits) {
     return ''
   }
-  const hasComma = cleaned.includes(',')
-  const [intPart, decPart] = cleaned.split(',')
-  const intDigits = intPart.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 10)
-  const decDigits = (decPart ?? '').replace(/\D/g, '').slice(0, 2)
-  const reais = (intDigits || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  if (!hasComma) {
-    return complete ? `${reais},00` : reais
-  }
-  return complete ? `${reais},${decDigits.padEnd(2, '0')}` : decDigits ? `${reais},${decDigits}` : `${reais},`
+  const padded = digits.padStart(3, '0')
+  const reais = padded
+    .slice(0, -2)
+    .replace(/^0+(?=\d)/, '')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const cents = padded.slice(-2)
+  return `${reais || '0'},${cents}`
 }
 
-// Converte o texto mascarado de volta para número (pt-BR → Number).
-export function parseBRL(value: string): number {
-  if (!value) {
-    return 0
-  }
-  const normalized = value.replace(/\./g, '').replace(',', '.')
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : 0
+// Converte o texto mascarado de volta para centavos inteiros ("1,23" → 123).
+export function parseBRLToCents(value: string): number {
+  const digits = value.replace(/\D/g, '')
+  return digits ? Number(digits) : 0
 }

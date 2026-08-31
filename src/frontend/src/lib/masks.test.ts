@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maskAccountNumber, maskBRL, maskCpf, parseBRL } from './masks'
+import { maskAccountNumber, maskBRL, maskCpf, parseBRLToCents } from './masks'
 
 describe('maskCpf', () => {
   it('retorna vazio quando não há dígitos', () => {
@@ -35,35 +35,33 @@ describe('maskAccountNumber', () => {
 })
 
 describe('maskBRL', () => {
-  it('mantém os reais como digitados e agrupa milhares', () => {
+  it('trata cada dígito como centavo e sempre exibe duas casas', () => {
     expect(maskBRL('')).toBe('')
-    expect(maskBRL('0')).toBe('0')
-    expect(maskBRL('5')).toBe('5')
-    expect(maskBRL('50')).toBe('50')
-    expect(maskBRL('5050')).toBe('5.050')
-    expect(maskBRL('1234567')).toBe('1.234.567')
+    expect(maskBRL('1')).toBe('0,01')
+    expect(maskBRL('12')).toBe('0,12')
+    expect(maskBRL('123')).toBe('1,23')
+    expect(maskBRL('5050')).toBe('50,50')
+    expect(maskBRL('123456')).toBe('1.234,56')
   })
 
-  it('aceita vírgula para os centavos e remove zeros à esquerda', () => {
-    expect(maskBRL('50,')).toBe('50,')
-    expect(maskBRL('50,5')).toBe('50,5')
-    expect(maskBRL('50,50')).toBe('50,50')
-    expect(maskBRL('05')).toBe('5')
-    expect(maskBRL('0,50')).toBe('0,50')
+  it('agrupa milhares e limita a 12 dígitos', () => {
+    expect(maskBRL('123456789012')).toBe('1.234.567.890,12')
+    expect(maskBRL('99999999999999999999')).toBe('9.999.999.999,99')
   })
 
-  it('ignora não-dígitos/vírgula e limita a 10 dígitos nos reais', () => {
+  it('ignora não-dígitos e zeros à esquerda', () => {
     expect(maskBRL('R$ 1.234,56')).toBe('1.234,56')
-    expect(maskBRL('99999999999999999999')).toBe('9.999.999.999')
+    expect(maskBRL('0005')).toBe('0,05')
   })
 })
 
-describe('parseBRL', () => {
-  it('converte o texto mascarado de volta em número', () => {
-    expect(parseBRL('')).toBe(0)
-    expect(parseBRL('0')).toBe(0)
-    expect(parseBRL('50')).toBe(50)
-    expect(parseBRL('50,50')).toBe(50.5)
-    expect(parseBRL('12.345,67')).toBe(12345.67)
+describe('parseBRLToCents', () => {
+  it('converte o texto mascarado para centavos inteiros', () => {
+    expect(parseBRLToCents('')).toBe(0)
+    expect(parseBRLToCents('0,00')).toBe(0)
+    expect(parseBRLToCents('0,01')).toBe(1)
+    expect(parseBRLToCents('0,50')).toBe(50)
+    expect(parseBRLToCents('50,50')).toBe(5050)
+    expect(parseBRLToCents('12.345,67')).toBe(1234567)
   })
 })

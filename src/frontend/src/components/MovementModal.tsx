@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { createMovement, getBalance, type MovementType } from '../lib/api'
-import { maskBRL, maskCpf, parseBRL } from '../lib/masks'
+import { maskBRL, maskCpf, parseBRLToCents } from '../lib/masks'
 import { Modal } from './Modal'
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -35,8 +35,6 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
   // Idempotência por tentativa: a mesma chave é reutilizada no retry da mesma
   // tentativa (replay não duplica); é regenerada após o sucesso.
   const idempotencyKeyRef = useRef<string | null>(null)
-  // True depois que o usuário digita a vírgula; antes disso o ",00" é auto-gerado.
-  const commaTypedRef = useRef(false)
 
   function resetForm() {
     setType(0)
@@ -49,7 +47,6 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
     setSubmitting(false)
     setSuccess(null)
     idempotencyKeyRef.current = null
-    commaTypedRef.current = false
   }
 
   function handleClose() {
@@ -64,7 +61,7 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
     }
     setError('')
 
-    const amountValue = parseBRL(amount)
+    const amountValue = parseBRLToCents(amount)
     if (amountValue <= 0) {
       setError('Informe um valor maior que zero.')
       return
@@ -130,10 +127,10 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
       {success ? (
         <div className="text-center">
           <p className="text-sm text-muted">{type === 0 ? 'Depósito realizado' : 'Saque realizado'}</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format(success.amount)}</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format(success.amount / 100)}</p>
           <div className="mt-6 rounded-xl border border-border bg-balance-bg p-4">
             <p className="text-sm text-muted">Saldo atual</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums">{brl.format(success.balance)}</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{brl.format(success.balance / 100)}</p>
           </div>
           <button
             type="button"

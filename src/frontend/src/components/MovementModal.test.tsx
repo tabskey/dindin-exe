@@ -19,7 +19,7 @@ const movement: MovementDto = {
   id: 9,
   accountId,
   type: 0,
-  amount: 50,
+  amount: 5000,
   timestamp: '2026-08-31T00:00:00Z',
   counterparty: null,
 }
@@ -33,7 +33,7 @@ function setup() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockGetBalance.mockResolvedValue({ accountId, balance: 1100 })
+  mockGetBalance.mockResolvedValue({ accountId, balance: 110000 })
 })
 
 describe('MovementModal', () => {
@@ -41,7 +41,7 @@ describe('MovementModal', () => {
     const user = userEvent.setup()
     const { onSuccess } = setup()
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50,50') // R$ 50,50
+    await user.type(screen.getByPlaceholderText('0,00'), '5050') // R$ 50,50 (5.050 centavos)
     await user.type(screen.getByPlaceholderText('000.000.000-00'), '11122233344')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
@@ -52,7 +52,7 @@ describe('MovementModal', () => {
     expect(mockCreateMovement).toHaveBeenCalledTimes(1)
     const [callAccountId, input] = mockCreateMovement.mock.calls[0]
     expect(callAccountId).toBe(accountId)
-    expect(input).toEqual({ type: 0, amount: 50.5, counterpartyCpf: '111.222.333-44' })
+    expect(input).toEqual({ type: 0, amount: 5050, counterpartyCpf: '111.222.333-44' })
     expect(onSuccess).toHaveBeenCalledTimes(1)
   })
 
@@ -60,7 +60,7 @@ describe('MovementModal', () => {
     const user = userEvent.setup()
     setup()
 
-    await user.type(screen.getByPlaceholderText('0,00'), '1,00') // R$ 1,00
+    await user.type(screen.getByPlaceholderText('0,00'), '100') // R$ 1,00 (100 centavos)
     await user.click(screen.getByRole('button', { name: 'Número da conta' }))
     await user.type(screen.getByPlaceholderText('Número (00000)'), '00315')
     await user.type(screen.getByPlaceholderText('Dígito (00)'), '41')
@@ -69,7 +69,7 @@ describe('MovementModal', () => {
     expect(await screen.findByText('Depósito realizado')).toBeInTheDocument()
     expect(mockCreateMovement).toHaveBeenCalledWith(
       accountId,
-      { type: 0, amount: 1, counterpartyAccountNumber: '00315-41' },
+      { type: 0, amount: 100, counterpartyAccountNumber: '00315-41' },
       expect.any(String),
     )
   })
@@ -78,11 +78,11 @@ describe('MovementModal', () => {
     const user = userEvent.setup()
     setup()
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50,50')
+    await user.type(screen.getByPlaceholderText('0,00'), '5050')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
     expect(await screen.findByText('Depósito realizado')).toBeInTheDocument()
-    expect(mockCreateMovement).toHaveBeenCalledWith(accountId, { type: 0, amount: 50.5 }, expect.any(String))
+    expect(mockCreateMovement).toHaveBeenCalledWith(accountId, { type: 0, amount: 5050 }, expect.any(String))
   })
 
   it('saca: envia só o valor e não mostra a seção "Pra quem?"', async () => {
@@ -92,11 +92,11 @@ describe('MovementModal', () => {
     await user.click(screen.getByRole('button', { name: 'Saque' }))
     expect(screen.queryByText('Pra quem?')).not.toBeInTheDocument()
 
-    await user.type(screen.getByPlaceholderText('0,00'), '150') // R$ 150,00
+    await user.type(screen.getByPlaceholderText('0,00'), '15000') // R$ 150,00 (15.000 centavos)
     await user.click(screen.getByRole('button', { name: 'Sacar' }))
 
     expect(await screen.findByText('Saque realizado')).toBeInTheDocument()
-    expect(mockCreateMovement).toHaveBeenCalledWith(accountId, { type: 1, amount: 150 }, expect.any(String))
+    expect(mockCreateMovement).toHaveBeenCalledWith(accountId, { type: 1, amount: 15000 }, expect.any(String))
   })
 
   it('reutiliza a mesma Idempotency-Key no retry e gera uma nova após o sucesso', async () => {
@@ -105,7 +105,7 @@ describe('MovementModal', () => {
     mockCreateMovement.mockRejectedValueOnce(new Error('Falha de rede'))
     mockCreateMovement.mockResolvedValueOnce(movement)
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50') // R$ 50,00
+    await user.type(screen.getByPlaceholderText('0,00'), '5000') // R$ 50,00 (5.000 centavos)
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
     expect(await screen.findByText('Falha de rede')).toBeInTheDocument()
 
@@ -118,7 +118,7 @@ describe('MovementModal', () => {
 
     // Depois do sucesso, a chave é regenerada: nova tentativa usa outra.
     await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    await user.type(screen.getByPlaceholderText('0,00'), '50,50')
+    await user.type(screen.getByPlaceholderText('0,00'), '5050')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
     expect(await screen.findByText('Depósito realizado')).toBeInTheDocument()
     const thirdKey = mockCreateMovement.mock.calls[2][2]
@@ -140,7 +140,7 @@ describe('MovementModal', () => {
     const user = userEvent.setup()
     setup()
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50,50')
+    await user.type(screen.getByPlaceholderText('0,00'), '5050')
     await user.type(screen.getByPlaceholderText('000.000.000-00'), '123')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
@@ -156,7 +156,7 @@ describe('MovementModal', () => {
       resolveCreate = resolve
     }))
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50')
+    await user.type(screen.getByPlaceholderText('0,00'), '5000')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
     const submitButton = screen.getByRole('button', { name: 'Enviando…' })
@@ -175,7 +175,7 @@ describe('MovementModal', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalledTimes(1)
 
-    await user.type(screen.getByPlaceholderText('0,00'), '50')
+    await user.type(screen.getByPlaceholderText('0,00'), '5000')
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
     await screen.findByText('Depósito realizado')
     await user.click(screen.getByRole('button', { name: 'Concluir' }))

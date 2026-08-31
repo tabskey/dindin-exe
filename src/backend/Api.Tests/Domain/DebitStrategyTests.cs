@@ -42,7 +42,7 @@ public class DebitStrategyTests
     {
         var account = FundedAccount(100);
 
-        var result = _strategy.Apply(account, 100.01m);
+        var result = _strategy.Apply(account, 10001);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCode.InsufficientBalance, result.Error?.Code);
@@ -52,7 +52,7 @@ public class DebitStrategyTests
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    public void Apply_WithNonPositiveAmount_FailsWithInvalidAmount(decimal amount)
+    public void Apply_WithNonPositiveAmount_FailsWithInvalidAmount(long amount)
     {
         var account = FundedAccount(100);
 
@@ -63,7 +63,7 @@ public class DebitStrategyTests
         Assert.Equal(100, account.Balance);
     }
 
-    private static Account FundedAccount(decimal amount)
+    private static Account FundedAccount(long amount)
     {
         var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
         var credit = account.ApplyMovement(new CreditStrategy(), amount);
