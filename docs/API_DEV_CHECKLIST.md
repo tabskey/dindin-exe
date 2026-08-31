@@ -4,7 +4,7 @@ Controle das etapas de implementação da API (Minimal API .NET 10), seguindo `d
 `docs/ARCHITECTURE.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto com o
 código, em cada fase.
 
-**Fase atual:** Fase 4 — Api
+**Fase atual:** Concluído — Fases 0 a 6
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -79,15 +79,20 @@ código, em cada fase.
 
 ## Fase 5 — Testes de integração
 
-- [ ] `WebApplicationFactory` + SQLite in-memory: fluxos completos (criar conta → login → movimentação →
-      saldo → histórico).
-- [ ] Idempotência: segunda chamada com a mesma chave não duplica.
-- [ ] Concorrência: débitos concorrentes nunca geram saldo negativo.
-- [ ] Critério: `dotnet test` 100% verde e cobertura geral ≥ 80%.
+- [x] `WebApplicationFactory` + SQLite (arquivo temporário; em-memory usa uma única conexão e não
+      suporta requisições concorrentes): fluxos completos (criar conta → login → movimentação → saldo →
+      histórico).
+- [x] Idempotência: segunda chamada com a mesma chave não duplica.
+- [x] Concorrência: débitos concorrentes nunca geram saldo negativo.
+- [x] Critério: `dotnet test` 100% verde (102 testes) e cobertura geral 97,1% ≥ 80%
+      (código gerado pelo OpenAPI excluído do cálculo).
 
 ## Fase 6 — Docker e documentação
 
-- [ ] Volume SQLite no `docker-compose.yml` (persistência, ARCHITECTURE.md §9) + rebuild + verificação via proxy.
-- [ ] Atualizar `README.md`: mover itens implementados para fora de "Planejado".
-- [ ] Registrar todo o andamento em `docs/AGENT_LOG.md`.
-- [ ] Critério: `docker compose up --build` com os dois serviços e API respondendo.
+- [x] Volume SQLite (`sqlite-data:/data`) no `docker-compose.yml` (persistência, ARCHITECTURE.md §9);
+      Dockerfile movido para `src/backend/Dockerfile` (contexto com todos os projetos da solution);
+      rebuild + verificação via proxy.
+- [x] Atualizar `README.md`: estado real (backend implementado, endpoints, seed, testes, 97,1% cobertura).
+- [x] Registrar todo o andamento em `docs/AGENT_LOG.md`.
+- [x] Critério: `docker compose up --build` com os dois serviços e API respondendo via
+      `http://localhost/api` (login 200, saldo, crédito 201; restart preserva saldo e idempotência).

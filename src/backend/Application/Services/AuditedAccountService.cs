@@ -32,14 +32,36 @@ public sealed class AuditedAccountService : IAccountService
         return result;
     }
 
-    public Task<Result<AccountDto>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default) =>
-        _inner.LoginAsync(request, cancellationToken);
+    public async Task<Result<AccountDto>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await _inner.LoginAsync(request, cancellationToken);
+        if (result.IsSuccess)
+        {
+            await _audit.AddAsync(
+                AuditLog.Create("Account", result.Value!.Id.ToString(), "login", JsonSerializer.Serialize(new { cpf = result.Value.Cpf }, JsonOptions)),
+                cancellationToken);
+            await _audit.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
+    }
 
     public Task<Result<BalanceDto>> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default) =>
         _inner.GetBalanceAsync(accountId, cancellationToken);
 
-    public Task<Result> UpdateAvatarAsync(long accountId, byte[] avatar, string contentType, CancellationToken cancellationToken = default) =>
-        _inner.UpdateAvatarAsync(accountId, avatar, contentType, cancellationToken);
+    public async Task<Result> UpdateAvatarAsync(long accountId, byte[] avatar, string contentType, CancellationToken cancellationToken = default)
+    {
+        var result = await _inner.UpdateAvatarAsync(accountId, avatar, contentType, cancellationToken);
+        if (result.IsSuccess)
+        {
+            await _audit.AddAsync(
+                AuditLog.Create("Account", accountId.ToString(), "update-avatar", JsonSerializer.Serialize(new { contentType, sizeBytes = avatar.Length }, JsonOptions)),
+                cancellationToken);
+            await _audit.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
+    }
 
     public Task<Result<AvatarDto>> GetAvatarAsync(long accountId, CancellationToken cancellationToken = default) =>
         _inner.GetAvatarAsync(accountId, cancellationToken);

@@ -4,6 +4,7 @@ using BC = BCrypt.Net.BCrypt;
 using Domain.Entities;
 using Domain.Results;
 using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Api.Tests.Application;
 
@@ -12,7 +13,7 @@ public class AccountServiceTests
     private readonly FakeAccountRepository _accounts = new();
     private readonly AccountService _service;
 
-    public AccountServiceTests() => _service = new AccountService(_accounts);
+    public AccountServiceTests() => _service = new AccountService(_accounts, NullLogger<AccountService>.Instance);
 
     private static CreateAccountRequest ValidRequest() =>
         new("Ana Teste", "111.111.111-11", AccountType.Checking, "senha123");

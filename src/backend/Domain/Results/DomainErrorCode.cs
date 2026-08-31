@@ -2,6 +2,7 @@ namespace Domain.Results;
 
 public enum DomainErrorCode
 {
+    InvalidRequest,
     InsufficientBalance,
     InvalidAmount,
     WeakPassword,

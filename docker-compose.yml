@@ -1,11 +1,17 @@
 services:
   api:
     build:
-      context: ./src/backend/Api
+      context: ./src/backend
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
     environment:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Data Source=/data/dindin.db"
+    volumes:
+      - sqlite-data:/data
 
   frontend:
     build:
@@ -14,3 +20,6 @@ services:
       - "80:80"
     depends_on:
       - api
+
+volumes:
+  sqlite-data:

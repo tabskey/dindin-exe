@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/Api.Tests/
+*.db
+*.db-shm
+*.db-wal
+coverage*.xml
