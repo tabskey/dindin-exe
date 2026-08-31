@@ -73,7 +73,8 @@ código, em cada fase.
 - [x] JWT: login confere senha (BCrypt) e devolve token simples (sem refresh/roles).
 - [x] Endpoints documentados + autorização: a conta só acessa os próprios dados (accountId do token vs rota).
 - [x] Avatar: `POST /accounts/{id}/avatar` (multipart, máx. 512 KB, JPEG/PNG/WebP) e
-      `GET /accounts/{id}/avatar` (stream) — sem idempotency filter.
+      `GET /accounts/{id}/avatar` (stream) — `Idempotency-Key` opcional (adicionada no
+      hardening pós-revisão, junto com o `IdempotencyFilter` opcional em `/accounts`).
 - [x] DI e organização dos endpoints (Program.cs).
 - [x] Critério: fluxo manual via `Api.http` / curl funcionando localmente.
 
@@ -84,7 +85,7 @@ código, em cada fase.
       histórico).
 - [x] Idempotência: segunda chamada com a mesma chave não duplica.
 - [x] Concorrência: débitos concorrentes nunca geram saldo negativo.
-- [x] Critério: `dotnet test` 100% verde (102 testes) e cobertura geral 97,1% ≥ 80%
+- [x] Critério: `dotnet test` 100% verde (106 testes) e cobertura geral 95,3% ≥ 80%
       (código gerado pelo OpenAPI excluído do cálculo).
 
 ## Fase 6 — Docker e documentação
@@ -92,7 +93,7 @@ código, em cada fase.
 - [x] Volume SQLite (`sqlite-data:/data`) no `docker-compose.yml` (persistência, ARCHITECTURE.md §9);
       Dockerfile movido para `src/backend/Dockerfile` (contexto com todos os projetos da solution);
       rebuild + verificação via proxy.
-- [x] Atualizar `README.md`: estado real (backend implementado, endpoints, seed, testes, 97,1% cobertura).
+- [x] Atualizar `README.md`: estado real (backend implementado, endpoints, seed, testes, 95,3% cobertura).
 - [x] Registrar todo o andamento em `docs/AGENT_LOG.md`.
 - [x] Critério: `docker compose up --build` com os dois serviços e API respondendo via
       `http://localhost/api` (login 200, saldo, crédito 201; restart preserva saldo e idempotência).

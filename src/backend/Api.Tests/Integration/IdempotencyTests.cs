@@ -68,6 +68,6 @@ public class IdempotencyTests : IClassFixture<ApiFactory>
 
         Assert.NotNull(audit);
         Assert.Equal("create", audit!.Action);
-        Assert.Contains(movement.Counterparty!, audit.Payload);
+        Assert.Contains(movement!.Counterparty!, audit.Payload);
     }
 }

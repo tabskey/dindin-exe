@@ -190,3 +190,18 @@
   tree limpo, testes verdes
 - ADR relacionado: nenhum; nota: no GitHub, objetos órfãos podem permanecer acessíveis por SHA por
   ~90 dias — para remoção definitiva é preciso contato com o suporte do GitHub
+
+## 2026-08-31 — Deep Copilot (Revisão do checklist pós-sync com origin)
+- Ação: verificação cruzada do `docs/API_DEV_CHECKLIST.md` (Fases 0–6) contra o código após o fast-forward
+  para `origin/main`; corrigidas divergências de números/descrição desatualizadas após o hardening pós-revisão
+- Motivo: usuário pediu para reverificar — todas as fases já estavam implementadas, mas o checklist não
+  refletia o estado pós-hardening
+- Verificação: `dotnet build` 0 erros; `dotnet test` 106/106 verdes (80 unitários + 26 integração);
+  gate de cobertura com `CI=true` verde — cobertura total medida **95,3%** (Api 90,8%, Program 89,3%);
+  `docker compose config` válido; avatar validado no `AccountService` (máx. 512 KB, JPEG/PNG/WebP);
+  chave JWT fora do `appsettings.json` (via `.env`/`.env.example`); README já correto (106/95,3%)
+- Arquivos alterados: `docs/API_DEV_CHECKLIST.md` (102 testes → 106; cobertura 97,1% → 95,3%; avatar
+  com `Idempotency-Key` opcional, não "sem idempotency filter"); `Api.Tests/Integration/IdempotencyTests.cs`
+  (fix warning CS8602 — `movement!` na linha 71; build voltou a 0 avisos)
+- Testes: 106 passando; build 0 erros/0 avisos
+- ADR relacionado: nenhum (ajuste pontual de documentação + fix de warning em teste)
