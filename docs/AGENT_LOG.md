@@ -321,3 +321,27 @@
   `docs/AGENT_LOG.md`
 - Testes: `npm run build` e `npm run lint` verdes
 - ADR relacionado: nenhum
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 2 — modal base + criar conta)
+- Ação: `src/components/Modal.tsx` (acessível: Esc/backdrop fecham, `aria-modal`, foco no primeiro
+  campo, trava de scroll, portal); `maskAccountNumber` em `lib/masks.ts`; `CreateAccountModal`
+  (nome/CPF mascarado/senha ≥ 6, validações locais, 409 inline, chave de idempotência por
+  tentativa, sucesso → fecha + pré-preenche CPF do login via `onCreated`); link "Criar conta" na
+  `LoginPage` (pré-preenchimento por callback — mais simples que `location.state`, evita
+  setState-em-effect do react-hooks)
+- Motivo: fase 2 do checklist do frontend
+- Arquivos alterados: `components/Modal.tsx`, `components/CreateAccountModal.tsx` (novos),
+  `lib/masks.ts` (+maskAccountNumber), `pages/LoginPage.tsx`, `docs/FRONTEND_DEV_CHECKLIST.md`,
+  `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes (2 erros do react-hooks v6 corrigidos: ref em
+  render e setState em effect)
+- ADR relacionado: 0004
+
+## 2026-08-31 — Deep Copilot (Frontend: ajustes de UI pós-Fase 2)
+- Ação: header do `ExtratoPage` ganhou `pr-14` para o botão "Sair" não colidir com o toggle de
+  tema (fixo no canto superior direito); `Modal` ganhou `backdrop-blur-sm` no overlay (efeito blur
+  na página ao abrir)
+- Motivo: apontamentos do usuário antes da PR
+- Arquivos alterados: `pages/ExtratoPage.tsx`, `components/Modal.tsx`, `docs/AGENT_LOG.md`
+- Testes: `npm run build` e `npm run lint` verdes
+- ADR relacionado: nenhum

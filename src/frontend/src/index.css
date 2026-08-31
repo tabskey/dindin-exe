@@ -9,7 +9,7 @@
  * Mudanças de cor = editar apenas estas variáveis em :root (claro) e .dark (escuro).
  */
 :root {
-  --background: #fff9e8;
+  --background: #fff6e8e1;
   --surface: #ffffff;
   --border: #e7c875;
   --foreground: #25201b;

@@ -17,3 +17,12 @@ export function maskCpf(value: string): string {
   }
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
 }
+
+// Número da conta: dígitos → XXXXX-XX (formato do backend, ex.: 00315-41).
+export function maskAccountNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 7)
+  if (digits.length <= 5) {
+    return digits
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}

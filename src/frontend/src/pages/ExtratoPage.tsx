@@ -13,7 +13,7 @@ export function ExtratoPage() {
 
   return (
     <main className="min-h-svh bg-background px-4 py-6 text-foreground">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between pr-14">
         <h1 className="text-lg font-bold">Olá, {account?.name}</h1>
         <button
           type="button"

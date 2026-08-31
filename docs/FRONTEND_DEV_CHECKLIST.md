@@ -4,7 +4,7 @@ Controle das etapas de implementação do frontend (React 19 + Vite + TypeScript
 seguindo `docs/AGENTS.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto
 com o código, em cada fase.
 
-**Fase atual:** 2 — Modal base + Criar conta (próxima)
+**Fase atual:** 3 — Extrato mínimo (próxima)
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -54,13 +54,15 @@ com o código, em cada fase.
 
 ## Fase 2 — Modal base + Criar conta
 
-- [ ] `Modal` base: overlay, fecha com Esc e clique fora, `aria-modal`, foco no primeiro campo,
-      trava de scroll.
-- [ ] `src/lib/masks.ts`: `maskAccountNumber` (`XXXXX-XX`) — `maskCpf` já criada e em uso no login.
-- [ ] `CreateAccountModal`: nome, CPF (mascarado), senha (≥ 6); erro 409 inline ("CPF já
-      cadastrado"); sucesso → fecha o modal e **pré-preenche o CPF no login (senha vazia)**.
-- [ ] Critério: criar conta nova pelo modal e entrar em seguida; CPF duplicado mostra erro sem sair
-      do modal.
+- [x] `Modal` base: overlay, fecha com Esc e clique fora, `aria-modal`, foco no primeiro campo,
+      trava de scroll (`src/components/Modal.tsx`).
+- [x] `src/lib/masks.ts`: `maskCpf` (em uso no login e no criar conta) e `maskAccountNumber`
+      (`XXXXX-XX`, usada na Fase 4).
+- [x] `CreateAccountModal`: nome, CPF (mascarado), senha (≥ 6); validações locais; erro 409
+      inline ("CPF já cadastrado"); sucesso → fecha o modal e **pré-preenche o CPF no login
+      (senha vazia)** via callback `onCreated`.
+- [x] Critério: `npm run build` e `npm run lint` verdes; fluxo "criar conta → login preenchido"
+      validado visualmente pelo usuário.
 
 ## Fase 3 — Extrato mínimo
 

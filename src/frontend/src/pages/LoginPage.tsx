@@ -1,19 +1,19 @@
 import { useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { IdCard, Lock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CreateAccountModal } from '../components/CreateAccountModal'
 import { useAuth } from '../context/auth'
 import { maskCpf } from '../lib/masks'
 
 export function LoginPage() {
-  const location = useLocation()
   const navigate = useNavigate()
   const { login } = useAuth()
 
-  // CPF pré-preenchido pelo CreateAccountModal (Fase 2) via location.state.
-  const initialCpf = (location.state as { cpf?: string } | null)?.cpf ?? ''
-  const [cpf, setCpf] = useState(initialCpf)
+  const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -37,7 +37,7 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-svh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-xl shadow-black/25">
         <header className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-foreground">DinDin.exe</h1>
           <p className="mt-1 text-sm text-muted">Acesse sua conta</p>
@@ -46,16 +46,19 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-foreground">CPF</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="username"
-              placeholder="000.000.000-00"
-              value={cpf}
-              onChange={(event) => setCpf(event.target.value.replace(/\D/g, '').slice(0, 11))}
-              onBlur={() => setCpf(maskCpf(cpf))}
-              className={inputClasses}
-            />
+            <div className="relative">
+              <IdCard className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="username"
+                placeholder="000.000.000-00"
+                value={cpf}
+                onChange={(event) => setCpf(event.target.value.replace(/\D/g, '').slice(0, 11))}
+                onBlur={() => setCpf(maskCpf(cpf))}
+                className={`${inputClasses} pl-10`}
+              />
+            </div>
             <span className="mt-1 block text-xs text-muted">
               Pode digitar só os números — o campo formata ao sair.
             </span>
@@ -63,14 +66,17 @@ export function LoginPage() {
 
           <label className="block">
             <span className="text-sm font-medium text-foreground">Senha</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={inputClasses}
-            />
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                type="password"
+                autoComplete="current-password"
+                placeholder="Sua senha"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={`${inputClasses} pl-10`}
+              />
+            </div>
           </label>
 
           {error && <p className="text-sm text-expense">{error}</p>}
@@ -84,10 +90,27 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted">
+        <div className="mt-6 border-t border-border pt-4 text-center">
+          <p className="text-xs text-muted">Não tem conta?</p>
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="mt-1 rounded font-medium text-accent hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Criar conta
+          </button>
+        </div>
+
+        <p className="mt-4 text-center text-xs text-muted">
           Contas de teste: 111.111.111-11 · senha123
         </p>
       </div>
+
+      <CreateAccountModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(newCpf) => setCpf(newCpf)}
+      />
     </main>
   )
 }
