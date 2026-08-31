@@ -5,7 +5,7 @@ namespace Domain.Entities;
 
 /// <summary>
 /// Monta o label de contraparte exibido no extrato: "{NOME} {NNN-NN} CC" (ex.: "JOAO789-09 CC").
-/// Contraparte é sempre outra conta do sistema (resolvida por CPF) ou a própria conta
+/// Contraparte é sempre outra conta do sistema (resolvida por CPF ou número da conta) ou a própria conta
 /// (depósito na boca do caixa, rotulado "AUTO-DEPOSITO").
 /// </summary>
 public static class CounterpartyLabel

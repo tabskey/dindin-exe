@@ -7,7 +7,7 @@ public sealed class CreditStrategy : IMovementStrategy
 {
     public MovementType Type => MovementType.Credit;
 
-    public Result Apply(Account account, decimal amount)
+    public Result Apply(Account account, long amount)
     {
         if (amount <= 0)
         {

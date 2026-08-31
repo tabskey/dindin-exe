@@ -38,9 +38,8 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
+                    b.Property<long>("Balance")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Cpf")
                         .IsRequired()
@@ -145,9 +144,8 @@ namespace Infrastructure.Migrations
                     b.Property<long>("AccountId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
+                    b.Property<long>("Amount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Counterparty")
                         .HasMaxLength(120)

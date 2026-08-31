@@ -45,8 +45,8 @@ public class PersistenceTests : IDisposable
         Assert.True(BC.Verify("senha123", ana.PasswordHash));
         Assert.True(BC.Verify("senha123", bruno.PasswordHash));
         Assert.True(BC.Verify("senha123", carlos.PasswordHash));
-        Assert.Equal(1050, ana.Balance);
-        Assert.Equal(80, bruno.Balance);
+        Assert.Equal(105000, ana.Balance);
+        Assert.Equal(8000, bruno.Balance);
         Assert.Equal(0, carlos.Balance);
         Assert.Equal(8, await db.Movements.CountAsync());
         var anaMovements = await db.Movements.AsNoTracking()
@@ -66,10 +66,8 @@ public class PersistenceTests : IDisposable
         Assert.Equal(3, await db.Accounts.CountAsync());
         Assert.Equal(8, await db.Movements.CountAsync());
         var applied = await db.Database.GetAppliedMigrationsAsync();
-        Assert.Equal(3, applied.Count());
+        Assert.Single(applied);
         Assert.Contains(applied, m => m.EndsWith("_InitialCreate"));
-        Assert.Contains(applied, m => m.EndsWith("_AddAvatar"));
-        Assert.Contains(applied, m => m.EndsWith("_AddCounterparty"));
     }
 
     [Fact]
@@ -144,7 +142,7 @@ public class PersistenceTests : IDisposable
 
         for (var i = 0; i < 5; i++)
         {
-            var movement = Movement.Create(account.Id, MovementType.Credit, 10m + i).Value!;
+            var movement = Movement.Create(account.Id, MovementType.Credit, 10L + i).Value!;
             await repository.AddAsync(movement);
         }
 

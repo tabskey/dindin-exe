@@ -11,7 +11,7 @@ public class Account
     public string Cpf { get; private set; } = string.Empty;
     public AccountType AccountType { get; private set; }
     public string PasswordHash { get; private set; } = string.Empty;
-    public decimal Balance { get; private set; }
+    public long Balance { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
     public byte[]? Avatar { get; private set; }
@@ -32,11 +32,13 @@ public class Account
         };
     }
 
-    public Result ApplyMovement(IMovementStrategy strategy, decimal amount) => strategy.Apply(this, amount);
+    public Result ApplyMovement(IMovementStrategy strategy, long amount) => strategy.Apply(this, amount);
 
     internal void SetId(long id) => Id = id;
 
-    internal void SetBalance(decimal balance) => Balance = balance;
+    internal void SetAccountNumber(string accountNumber) => AccountNumber = accountNumber;
+
+    internal void SetBalance(long balance) => Balance = balance;
 
     public void SetAvatar(byte[] avatar, string contentType)
     {

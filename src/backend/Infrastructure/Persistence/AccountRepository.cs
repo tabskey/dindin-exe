@@ -16,6 +16,9 @@ public class AccountRepository : IAccountRepository
     public async Task<Account?> GetByCpfAsync(string cpf, CancellationToken cancellationToken = default) =>
         await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Cpf == cpf, cancellationToken);
 
+    public async Task<Account?> GetByAccountNumberAsync(string accountNumber, CancellationToken cancellationToken = default) =>
+        await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.AccountNumber == accountNumber, cancellationToken);
+
     public async Task AddAsync(Account account, CancellationToken cancellationToken = default) =>
         await _db.Accounts.AddAsync(account, cancellationToken);
 

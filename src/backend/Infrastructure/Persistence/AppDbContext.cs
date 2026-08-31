@@ -23,7 +23,7 @@ public class AppDbContext : DbContext
             account.Property(a => a.Cpf).HasMaxLength(14).IsRequired();
             account.HasIndex(a => a.Cpf).IsUnique();
             account.Property(a => a.PasswordHash).IsRequired();
-            account.Property(a => a.Balance).HasPrecision(18, 2);
+            account.Property(a => a.Balance);
             account.Property(a => a.AvatarContentType).HasMaxLength(50);
             // SQLite não gera rowversion nativamente; o valor é atribuído pelo RowVersionInterceptor.
             account.Property(a => a.RowVersion).IsConcurrencyToken();
@@ -34,7 +34,7 @@ public class AppDbContext : DbContext
         {
             movement.HasKey(m => m.Id);
             movement.Property(m => m.Id).ValueGeneratedOnAdd();
-            movement.Property(m => m.Amount).HasPrecision(18, 2);
+            movement.Property(m => m.Amount);
             movement.Property(m => m.Counterparty).HasMaxLength(120);
             movement.HasIndex(m => m.AccountId);
         });

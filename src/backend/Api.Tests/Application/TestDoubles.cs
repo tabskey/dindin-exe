@@ -15,6 +15,9 @@ internal sealed class FakeAccountRepository : IAccountRepository
     public Task<Account?> GetByCpfAsync(string cpf, CancellationToken cancellationToken = default) =>
         Task.FromResult(Accounts.FirstOrDefault(a => a.Cpf == cpf));
 
+    public Task<Account?> GetByAccountNumberAsync(string accountNumber, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Accounts.FirstOrDefault(a => a.AccountNumber == accountNumber));
+
     public Task AddAsync(Account account, CancellationToken cancellationToken = default)
     {
         Accounts.Add(account);

@@ -10,7 +10,7 @@
 
 O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um frontend em **React 19 + Vite + TypeScript**.
 
-> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend ainda é o starter do Vite: as telas de login e extrato são o próximo passo. O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
+> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend já tem a página de login com tema claro/escuro (Tailwind CSS); a tela de extrato e a integração com a API são os próximos passos. O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
 
 A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
 
@@ -131,7 +131,7 @@ O token deve ser enviado como `Authorization: Bearer <jwt>` nas rotas protegidas
 | ------ | -------------------------- | ---- | ---------------------------------------------------------------------------- |
 | `POST` | `/auth/login`              | —    | Autentica por CPF + senha e devolve JWT                                      |
 | `POST` | `/accounts`                | —    | Cria uma conta (`Idempotency-Key` opcional)                                  |
-| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf` opcional) |
+| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf`/`counterpartyAccountNumber` opcionais) |
 | `GET`  | `/accounts/{id}/balance`   | ✔    | Consulta o saldo disponível                                                  |
 | `GET`  | `/accounts/{id}/movements` | ✔    | Consulta o histórico de movimentações paginado                               |
 | `POST` | `/accounts/{id}/avatar`    | ✔    | Envia avatar (multipart, JPEG/PNG/WebP até 512 KB)                           |
@@ -147,18 +147,19 @@ Content-Type: application/json
 
 {
   "type": 0,
-  "amount": 150.00,
+  "amount": 15000,
   "counterpartyCpf": "222.222.222-22"
 }
 ```
 
-`type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
+`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
 
 **Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
 
-- Sem `counterpartyCpf` → depósito na boca do caixa: `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
+- Sem contraparte → depósito na boca do caixa: `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
 - Com `counterpartyCpf` → resolve a conta pelo CPF e grava o label (ex.: `BRUNO TESTE 222-22 CC`).
-- CPF inexistente → erro `400`.
+- Com `counterpartyAccountNumber` → resolve a conta pelo número (ex.: `00315-41`); tem precedência sobre o CPF.
+- CPF ou conta inexistente → erro `400`.
 
 A regra principal é simples:
 
@@ -191,17 +192,24 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**106 testes, todos verdes** (`dotnet test`):
+**109 testes, todos verdes** (`dotnet test`):
 
-### Testes unitários (80)
+### Testes unitários
 
 Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, contraparte, auditoria, idempotência, seed e migrações.
 
-### Testes de integração (26)
+### Testes de integração
 
 `WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 
 Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
+
+### Testes do frontend (próximas fases)
+
+O frontend ganha testes a partir da Fase 3 do checklist (ADR 0005): **Vitest + Testing Library**
+(componentes e regras), **Playwright** (fluxos E2E no navegador) e **SonarQube local** via Docker
+(qualidade e cobertura, meta ≥ 80% de linhas) — detalhes em
+[`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md).
 
 ---
 

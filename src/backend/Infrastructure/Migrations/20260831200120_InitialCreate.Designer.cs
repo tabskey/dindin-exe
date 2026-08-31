@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260829175225_InitialCreate")]
+    [Migration("20260831200120_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -34,9 +34,15 @@ namespace Infrastructure.Migrations
                     b.Property<int>("AccountType")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
+                    b.Property<byte[]>("Avatar")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("AvatarContentType")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
+
+                    b.Property<long>("Balance")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Cpf")
                         .IsRequired()
@@ -141,8 +147,11 @@ namespace Infrastructure.Migrations
                     b.Property<long>("AccountId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
+                    b.Property<long>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Counterparty")
+                        .HasMaxLength(120)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Timestamp")

@@ -117,12 +117,16 @@ cd src/frontend && npm install && npm run dev
 # backend
 dotnet test
 
-# frontend (se houver testes)
-npm test
+# frontend
+npm test             # Vitest + Testing Library (componentes e regras)
+npm run coverage     # cobertura lcov (alimenta o SonarQube)
+npx playwright test  # E2E no navegador (requer app + API no ar)
 ```
 
 Nenhum PR ou entrega deve ser considerada pronta sem os testes unitários do domínio (regra de saldo negativo,
-strategies de crédito/débito) e os testes de integração dos endpoints passando.
+strategies de crédito/débito), os testes de integração dos endpoints, os testes de componentes do frontend
+(Vitest + Testing Library) e os E2E (Playwright) passando. Qualidade e cobertura do frontend via SonarQube
+local (meta ≥ 80% de linhas) — ADR 0005.
 
 ## Escopo do desafio — não expandir sem consulta
 
