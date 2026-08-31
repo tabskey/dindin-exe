@@ -152,6 +152,29 @@ export function getMovements(accountId: number, page = 1, pageSize = 20): Promis
   return request(`/accounts/${accountId}/movements?page=${page}&pageSize=${pageSize}`)
 }
 
+// Avatar: GET devolve os bytes da imagem (stream) — não dá pra usar request<T>,
+// que espera JSON. 404 (sem avatar) vira null; outros erros seguem o padrão.
+export async function getAvatar(accountId: number): Promise<Blob | null> {
+  const token = getToken()
+  const headers = new Headers()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const response = await fetch(`${API_BASE}/accounts/${accountId}/avatar`, { headers })
+
+  if (response.status === 404) {
+    return null
+  }
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      unauthorizedHandler?.()
+    }
+    throw new ApiError(response.status, await errorMessage(response))
+  }
+  return response.blob()
+}
+
 export function createMovement(
   accountId: number,
   input: CreateMovementRequest,

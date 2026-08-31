@@ -388,3 +388,57 @@
 - Testes: `npm test` 19/19 verdes; `npm run coverage` gera `lcov.info`; `npm run test:e2e` 1/1
   (smoke); `npm run build` e `npm run lint` verdes
 - ADR relacionado: 0005 (executada)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 4 — Extrato mínimo)
+- Ação: `ExtratoPage` implementado — card de saldo (`bg-balance-bg`), lista de movimentações com
+  estilos por tipo (receita `bg-income-bg`/`text-income`, despesa `bg-expense-bg`/`text-expense`;
+  data pt-BR, contraparte ou "Boca do caixa", valor com +/− em R$), FAB "+" fixo (ação na Fase 5)
+  e botão sair; carregamento via `GET /accounts/{id}/balance` + `GET /accounts/{id}/movements`
+  (`Promise.all`) com estados de loading e erro + "Tentar novamente"
+- Motivo: fase 4 do checklist do frontend
+- Arquivos alterados: `src/frontend/src/pages/ExtratoPage.tsx` (reescrito),
+  `src/frontend/src/pages/ExtratoPage.test.tsx` (novo), `docs/FRONTEND_DEV_CHECKLIST.md` (Fase 4 [x])
+- Observações: (1) a regra `react-hooks/set-state-in-effect` (eslint-plugin-react-hooks v7) barra
+  `setState` síncrono em effect, inclusive via função chamada — o fetch foi separado num helper
+  de módulo sem setState (`fetchExtrato`) e o resultado é aplicado em callbacks `.then`/`.catch`/
+  `.finally` (setState em callback assíncrono é permitido pela regra); (2) o critério "login com
+  Ana → saldo + 8 movimentações do seed" foi validado por testes RTL com mocks (8 itens, estilos
+  de receita/despesa, loading, erro/retry, logout) — a verificação real contra a API no Docker
+  fica pendente (stack não estava no ar)
+- Testes: `npm test` 23/23 verdes; cobertura 74,53% de linhas (ExtratoPage 96,15%, Modal 100%,
+  masks 100%); `npm run build` e `npm run lint` verdes
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes aplicados)
+
+## 2026-08-31 — Deep Copilot (Frontend: Fase 4 — verificação real E2E)
+- Ação: stack no Docker (`docker compose up -d --build`) e verificação real do critério da Fase 4
+  via Playwright: login com Ana (111.111.111-11 / senha123) → `/extrato` mostra "Olá, Ana Teste",
+  saldo R$ 1.050,00 e as 4 movimentações do seed com estilos (2 receitas `text-income`, 2 despesas
+  `text-expense`, contrapartes "AUTO-DEPOSITO 111-11 CC" e "BRUNO TESTE 222-22 CC") — **passou**
+  (spec temporário, removido; suíte E2E formal entra na Fase 6)
+- Motivo: fechar o critério da Fase 4 ("login com Ana → saldo + movimentações do seed")
+- Observações: (1) o volume `sqlite-data` estava sujo de testes manuais (saldo 1060, movimento
+  +10 órfão, ids 5-8 ausentes) — `docker compose down -v` + `up -d` restaurou o seed limpo;
+  (2) o seed ATUAL cria **4 movimentações** (saldo 1050 — confere com `PersistenceTests.cs:48`),
+  não 8 como os docs antigos diziam — corrigido o checklist; (3) atenção: encadear `docker compose
+  down -v & docker compose up -d` num comando só derruba o stack (o `down` roda em background e
+  executa depois do `up`) — rodar em comandos separados
+- Testes: verificação E2E real 1/1; suíte Vitest segue 23/23
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes)
+
+## 2026-08-31 — Deep Copilot (Frontend: avatar com fallback de iniciais)
+- Ação: cabeçalho do `ExtratoPage` agora mostra o avatar da conta; sem avatar, mostra as
+  iniciais do nome ("Ana Teste" → "AT"; nome único → 2 primeiras letras). Implementação:
+  `getAvatar(accountId)` no client (`GET /accounts/{id}/avatar` devolve os bytes — 404 vira
+  null, erros seguem o padrão ApiError); o fetch vira `Blob` → object URL (`URL.createObjectURL`,
+  revogado no unmount); falha do avatar NÃO derruba o extrato (`.catch(() => null)`); círculo
+  `size-10` com `bg-accent`, `<img>` com `alt` quando há imagem
+- Motivo: pedido do usuário ("se a pessoa não tiver avatar, pode aparecer como iniciais")
+- Arquivos alterados: `src/frontend/src/lib/api.ts` (getAvatar), `src/frontend/src/pages/ExtratoPage.tsx`
+  (header + estado + fetch), `src/frontend/src/pages/ExtratoPage.test.tsx` (mock do getAvatar,
+  fixture "Ana Teste", teste de iniciais "AT" e teste da imagem com blob; stub de
+  URL.createObjectURL no jsdom)
+- Observações: (1) `apply_patch` é all-or-nothing — um hunk que falha reverte a chamada inteira;
+  (2) jsdom não implementa object URLs — stub no teste; (3) validação real contra o seed (Ana sem
+  avatar): login → "AT" visível no cabeçalho, verificado via Playwright (spec temporário removido)
+- Testes: `npm test` 24/24 verdes; `npm run build` e `npm run lint` verdes; verificação E2E real 1/1
+- ADR relacionado: 0004 (tela de extrato) e 0005 (testes)

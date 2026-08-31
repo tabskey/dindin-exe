@@ -4,7 +4,7 @@ Controle das etapas de implementação do frontend (React 19 + Vite + TypeScript
 seguindo `docs/AGENTS.md`. Itens marcados com `[x]` estão concluídos. Este arquivo é atualizado junto
 com o código, em cada fase.
 
-**Fase atual:** 4 — Extrato mínimo (próxima)
+**Fase atual:** 5 — Movimentação (modal único depósito/saque, próxima)
 
 ## Regras aplicáveis (AGENTS.md)
 
@@ -89,15 +89,15 @@ com o código, em cada fase.
 
 ## Fase 4 — Extrato mínimo
 
-- [ ] `ExtratoPage`: card de saldo (`bg-balance-bg`), lista de movimentações (receita
+- [x] `ExtratoPage`: card de saldo (`bg-balance-bg`), lista de movimentações (receita
       `bg-income-bg`/`text-income`, despesa `bg-expense-bg`/`text-expense`; data, contraparte,
       valor), botão **sair**.
-- [ ] Carregamento de dados: `GET /accounts/{id}/balance` + `GET /accounts/{id}/movements?page=1`;
+- [x] Carregamento de dados: `GET /accounts/{id}/balance` + `GET /accounts/{id}/movements?page=1`;
       estado de carregamento e erro simples.
-- [ ] FAB "+" fixo (canto inferior direito).
-- [ ] Testes Vitest+RTL do `ExtratoPage`: saldo e as 8 movimentações com estilos de receita/
+- [x] FAB "+" fixo (canto inferior direito).
+- [x] Testes Vitest+RTL do `ExtratoPage`: saldo e as 8 movimentações com estilos de receita/
       despesa; estados de carregamento e erro; botão sair (logout).
-- [ ] Critério: login com Ana → saldo inicial e as 8 movimentações do seed renderizadas com os
+- [x] Critério: login com Ana → saldo inicial e as movimentações do seed renderizadas com os
       estilos de receita/despesa; `npm test` + `npm run build`/`lint` verdes.
 
 ## Fase 5 — Movimentação (modal único depósito/saque)
