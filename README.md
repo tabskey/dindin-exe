@@ -4,6 +4,9 @@
   <img src="./docs/coin.png" alt="logo" />
 </p>
 
+[![CI - Test & Coverage](https://github.com/tabskey/dindin-exe/actions/workflows/ci-test.yml/badge.svg)](https://github.com/tabskey/dindin-exe/actions/workflows/ci-test.yml) [![.NET](https://img.shields.io/badge/--512BD4?logo=.net&logoColor=ffffff)](https://dotnet.microsoft.com/)
+[![TypeScript](https://img.shields.io/badge/--3178C6?logo=typescript&logoColor=ffffff)](https://www.typescriptlang.org/)
+
 ### Sistema de controle de movimentações de conta
 
 **DinDin.exe** é uma aplicação para controle de movimentações de uma conta empresarial, com suporte a entradas, saídas, consulta de saldo e histórico de movimentações — sem nunca permitir saldo negativo. 🤑
