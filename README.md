@@ -12,7 +12,7 @@ O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um fronten
 
 > **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend também está completo — login, extrato com saldo/histórico, movimentações (depósito/saque com contraparte), avatar e tema claro/escuro, com testes (Vitest + Playwright) e análise de qualidade (SonarQube local). O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md), [`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
 
-A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
+A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/). Para apresentações, há um resumo consolidado das decisões e dos porquês em [`docs/APRESENTACAO.md`](./docs/APRESENTACAO.md).
 
 As regras para agentes de IA que trabalharem neste repositório estão em [`docs/AGENTS.md`](./docs/AGENTS.md).
 
@@ -187,6 +187,30 @@ Decisões arquiteturais implementadas (motivações em [`docs/adr/`](./docs/adr/
 * **EF Core + SQLite** com migrações e seed no startup;
 * **Result pattern** — erros de regra de negócio retornam como valor, não como exception.
 
+### Frontend
+
+**React 19 + TypeScript + Vite**, com **Tailwind CSS v4** e ícones `lucide-react`. Sem
+gerenciador de estado global além do React — arquitetura enxuta, por camadas (`pages/`,
+`components/`, `context/`, `hooks/`, `lib/`):
+
+- **Navegação** — React Router com URL por tela: `/login` (pública) e `/extrato` (protegida); o
+  guard é um `Navigate` no `App.tsx` (autenticado → extrato, não autenticado → login).
+- **Sessão** — `AuthProvider` + hook `useAuth` (`context/`): token JWT e conta persistidos em
+  `localStorage`; logout automático em qualquer `401` via `registerUnauthorizedHandler`.
+- **Dados** — `lib/api.ts` (client `fetch` sobre `/api`, `ApiError` com `status`, erros mapeados
+  para pt-BR e `Idempotency-Key` por tentativa nas movimentações) e `lib/masks.ts` (CPF, conta,
+  moeda).
+- **Componentes** — `Modal` base acessível (overlay, Esc, foco, trava de scroll) especializado em
+  `MovementModal`, `AvatarModal` e `CreateAccountModal`; `ThemeToggle` para tema claro/escuro.
+- **Tema** — o hook `useTheme` alterna a classe `.dark` no `<html>` e persiste no `localStorage`;
+  a paleta vive em tokens CSS (`:root`/`.dark` no `index.css`) mapeados via `@theme` do Tailwind
+  (mudar cor = editar só os tokens). Um script inline no `index.html` evita flash do tema errado.
+
+Testes e qualidade do frontend estão na seção [🧪 Testes](#-testes); decisões em
+[`docs/adr/0004`](./docs/adr/0004-frontend-sessao-e-client-de-api.md) (navegação, sessão e client)
+e [`docs/adr/0005`](./docs/adr/0005-testes-e-qualidade-no-frontend.md) (Vitest + Playwright +
+SonarQube).
+
 A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
 ---
@@ -207,8 +231,9 @@ Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar aba
 
 ### Testes do frontend
 
-**84 testes, todos verdes**: 79 de componentes/regras (Vitest + Testing Library) e 5 E2E
-(Playwright, fluxos completos no navegador).
+**84 testes, todos verdes** — cobertura de linhas **95,7%** (meta ≥ 80%; 0 bugs, 0 code smells,
+0 vulnerabilidades): 79 de componentes/regras (Vitest + Testing Library) e 5 E2E (Playwright,
+fluxos completos no navegador). A suíte Vitest roda em ~30s e o E2E em ~7s (máquina local, Windows).
 
 - **Vitest + Testing Library** (`npm test`): máscaras, client de API (fetch mockado), login,
   criação de conta, extrato, movimentação, avatar, modal e tema; `npm run coverage` gera o `lcov`
@@ -241,11 +266,23 @@ src/
 │   ├── Domain/             # Entidades, regras de negócio, strategies
 │   ├── Infrastructure/     # EF Core, repositórios, migrações, seed
 │   └── Api.Tests/          # Testes unitários e de integração
-└── frontend/               # React 19 + Vite + TypeScript (login, extrato, movimentação, avatar)
+└── frontend/               # React 19 + Vite + TypeScript
+    ├── src/
+    │   ├── pages/          # LoginPage e ExtratoPage (rotas)
+    │   ├── components/     # Modal base, modais de domínio e ThemeToggle
+    │   ├── context/        # AuthProvider + sessão (JWT)
+    │   ├── hooks/          # useTheme (tema claro/escuro)
+    │   ├── lib/            # api.ts (client HTTP) e masks.ts (máscaras)
+    │   ├── test/           # helpers de teste (router, setup)
+    │   ├── index.css       # tokens de tema (Tailwind v4)
+    │   └── App.tsx         # rotas + guard de autenticação
+    └── e2e/                # Playwright (fluxos E2E no navegador)
 
 docs/
 ├── ARCHITECTURE.md         # Arquitetura completa + diagrama
 ├── API_DEV_CHECKLIST.md    # Controle das fases de implementação
+├── APRESENTACAO.md         # Decisões e porquês (material de apresentação)
+├── FRONTEND_DEV_CHECKLIST.md # Controle das fases do frontend
 ├── AGENTS.md               # Regras para agentes de IA no repositório
 ├── AGENT_LOG.md            # Log de execução dos agentes
 ├── adr/                    # Registro de decisões de arquitetura

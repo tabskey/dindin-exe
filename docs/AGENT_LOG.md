@@ -648,3 +648,18 @@
   `role=dialog` — usado `page.getByRole('dialog')` sem filtro
 - Testes: `npm run test:e2e` 5/5; `npm test` 79/79, lint e build verdes (rodados na sequência)
 - ADR relacionado: 0004, 0005, 0006
+
+## 2026-09-01 — Deep Copilot (docs: arquitetura do frontend + material de apresentação)
+- Ação: README ganhou a subseção "Frontend" na Arquitetura (navegação, sessão, dados, componentes,
+  tema), a árvore interna de `src/frontend` na Estrutura e o link para o novo
+  `docs/APRESENTACAO.md`; criado `docs/APRESENTACAO.md` com o resumo consolidado das decisões e
+  dos porquês (backend e frontend), números de qualidade (109 testes/95,3% no backend; 84
+  testes/95,7% no frontend) e um roteiro de apresentação sugerido; árvore de `docs/` no README
+  agora inclui `FRONTEND_DEV_CHECKLIST.md` (estava ausente)
+- Motivo: pedido do usuário — material completo para apresentação
+- Arquivos alterados: criado `docs/APRESENTACAO.md`; editados `README.md` e `docs/AGENT_LOG.md`
+- Observações: decisões e números conferidos contra os ADRs 0001–0006 e `docs/ARCHITECTURE.md`;
+  dependências do frontend validadas no `package.json` (React 19, react-router-dom 7, Tailwind v4,
+  Vite 8, Vitest 3, Playwright 1.62)
+- Testes: sem mudança de código — nenhuma suíte reexecutada
+- ADR relacionado: 0001–0006
