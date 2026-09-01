@@ -13,7 +13,7 @@
 
 O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um frontend em **React 19 + Vite + TypeScript**.
 
-A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
+A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design.
 
 <p align="center">
   <img src="./docs/interface.gif" alt="Tela" />
