@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth'
 import { AvatarModal } from '../components/AvatarModal'
 import { MovementModal } from '../components/MovementModal'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { getAvatar, getBalance, getMovements, type MovementDto } from '../lib/api'
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -141,13 +142,16 @@ export function ExtratoPage() {
               <span className="text-lg font-bold"> {account?.name}</span>
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            Sair
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle className="static" />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Sair
+            </button>
+          </div>
         </header>
 
         {loading && <p className="mt-10 text-center text-sm text-muted">Carregando…</p>}

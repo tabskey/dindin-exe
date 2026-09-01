@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { IdCard, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { CreateAccountModal } from '../components/CreateAccountModal'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../context/auth'
 import { maskCpf } from '../lib/masks'
 import coinArt from '../assets/coin-art.svg'
@@ -18,7 +19,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) {
       return
@@ -40,6 +41,7 @@ export function LoginPage() {
 
   return (
     <main className="pixel-bg flex min-h-svh items-center justify-center px-4">
+      <ThemeToggle />
       <div className="relative flex w-full max-w-sm flex-col items-center">
         <div className="login-coin-wrap" aria-label="Moeda girando do DinDin.EXE">
           <div className="login-coin-stage">

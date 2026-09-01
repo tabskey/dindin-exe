@@ -1,6 +1,12 @@
 import { useTheme } from '../hooks/useTheme'
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  // Posicionamento; padrão: flutuante no canto superior direito (login).
+  // No extrato o header passa "static" para o botão ficar inline ao lado do "Sair".
+  className?: string
+}
+
+export function ThemeToggle({ className = 'fixed top-4 right-4 z-50' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -10,7 +16,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       title={isDark ? 'Modo escuro ativo' : 'Modo claro ativo'}
-      className="fixed top-4 right-4 z-50 flex size-10 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition-colors hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className={`flex size-10 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm transition-colors hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${className}`}
     >
       {isDark ? (
         <svg

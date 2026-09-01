@@ -6,7 +6,7 @@ namespace Domain.Entities;
 /// <summary>
 /// Monta o label de contraparte exibido no extrato: "{NOME} {NNN-NN} CC" (ex.: "JOAO789-09 CC").
 /// Contraparte é sempre outra conta do sistema (resolvida por CPF ou número da conta) ou a própria conta
-/// (depósito na boca do caixa, rotulado "AUTO-DEPOSITO").
+/// (auto-depósito "AUTO-DEPOSITO" ou auto-saque "AUTO-SAQUE" — o próprio titular).
 /// </summary>
 public static class CounterpartyLabel
 {
@@ -17,6 +17,9 @@ public static class CounterpartyLabel
 
     public static string AutoDeposit(Account account) =>
         $"AUTO-DEPOSITO {MaskCpf(account.Cpf)} {Suffix}";
+
+    public static string AutoWithdrawal(Account account) =>
+        $"AUTO-SAQUE {MaskCpf(account.Cpf)} {Suffix}";
 
     /// <summary>Máscara do CPF: últimos 5 dígitos no formato NNN-NN (ex.: "123.456.789-09" → "789-09").</summary>
     public static string MaskCpf(string cpf)

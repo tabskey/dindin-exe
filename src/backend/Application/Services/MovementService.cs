@@ -45,8 +45,10 @@ public sealed class MovementService : IMovementService
         }
         else if (string.IsNullOrWhiteSpace(request.CounterpartyCpf))
         {
-            // Sem contraparte informada: depósito na boca do caixa — o próprio titular.
-            counterparty = CounterpartyLabel.AutoDeposit(account);
+            // Sem contraparte: auto-depósito (crédito) ou auto-saque (débito) — o próprio titular.
+            counterparty = request.Type == MovementType.Credit
+                ? CounterpartyLabel.AutoDeposit(account)
+                : CounterpartyLabel.AutoWithdrawal(account);
         }
         else
         {

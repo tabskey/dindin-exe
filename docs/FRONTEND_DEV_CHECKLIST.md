@@ -135,8 +135,9 @@ com o código, em cada fase.
 - [ ] `npm run build`, `npm run lint` e `npm test` verdes.
 - [ ] Playwright E2E completo no navegador: login → extrato → depósito → saque, e
       criar conta → login preenchido.
-- [ ] SonarQube: análise executada com cobertura ≥ 80% (meta alinhada ao backend) e sem
-      problemas novos de qualidade bloqueantes.
+- [ ] SonarQube: análise executada (0 bugs / 0 code smells / 0 vulnerabilidades; falso
+      positivo do CSS do Tailwind v4 resolvido excluindo `src/index.css`); falta cobertura
+      ≥ 80% (hoje 73,5%).
 - [ ] ADR 0004 e ADR 0005 finalizadas com as decisões como executadas.
 - [ ] Atualizar `README.md` (status do frontend + seção de testes) e `docs/AGENT_LOG.md`;
       marcar itens deste checklist.

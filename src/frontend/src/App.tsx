@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { ThemeToggle } from './components/ThemeToggle'
 import { useAuth } from './context/auth'
 import { AuthProvider } from './context/AuthProvider'
 import { ExtratoPage } from './pages/ExtratoPage'
@@ -26,7 +25,6 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <ThemeToggle />
       <AppRoutes />
     </AuthProvider>
   )

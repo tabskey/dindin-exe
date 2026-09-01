@@ -78,6 +78,7 @@ describe('ExtratoPage', () => {
     expect(screen.getAllByText('Boca do caixa')).toHaveLength(3)
     expect(screen.getAllByRole('listitem')).toHaveLength(8)
     expect(screen.getByRole('button', { name: 'Nova movimentação' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ativar modo/ })).toBeInTheDocument()
 
     const incomeValue = screen.getByText(/\+ R\$\s*100,50/)
     expect(incomeValue).toHaveClass('text-income')

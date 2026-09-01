@@ -156,7 +156,8 @@ Content-Type: application/json
 
 **Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
 
-- Sem contraparte → depósito na boca do caixa: `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
+- Sem contraparte no **depósito** → `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
+- Sem contraparte no **saque** → `AUTO-SAQUE 111-11 CC` (o próprio titular).
 - Com `counterpartyCpf` → resolve a conta pelo CPF e grava o label (ex.: `BRUNO TESTE 222-22 CC`).
 - Com `counterpartyAccountNumber` → resolve a conta pelo número (ex.: `00315-41`); tem precedência sobre o CPF.
 - CPF ou conta inexistente → erro `400`.

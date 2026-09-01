@@ -1,12 +1,12 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { createAccount } from '../lib/api'
 import { maskCpf } from '../lib/masks'
 import { Modal } from './Modal'
 
 interface CreateAccountModalProps {
-  open: boolean
-  onClose: () => void
-  onCreated: (cpf: string) => void
+  readonly open: boolean
+  readonly onClose: () => void
+  readonly onCreated: (cpf: string) => void
 }
 
 export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountModalProps) {
@@ -23,7 +23,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountMo
     setError('')
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) {
       return

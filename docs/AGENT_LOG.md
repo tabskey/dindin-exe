@@ -566,3 +566,44 @@
 - Testes: backend `dotnet test` 109/109 verdes; frontend `npm test` 46/46, `npm run lint` e
   `npm run build` verdes
 - ADR relacionado: 0006 (Aceito)
+
+## 2026-08-31 — Deep Copilot (Backend: label do saque sem contraparte)
+- Ação: saque sem contraparte passou a usar o label `AUTO-SAQUE {NNN-NN} CC` (antes era
+  `AUTO-DEPOSITO`, incorreto); adicionado `CounterpartyLabel.AutoWithdrawal` e o `MovementService`
+  escolhe o label pelo tipo (crédito → `AUTO-DEPOSITO`, débito → `AUTO-SAQUE`)
+- Motivo: pedido do usuário — o extrato mostrava "AUTO DEPOSITO" para saques
+- Arquivos alterados: `src/backend/Domain/Entities/CounterpartyLabel.cs`,
+  `src/backend/Application/Services/MovementService.cs`,
+  `src/backend/Api.Tests/Application/MovementServiceTests.cs` (+1 teste),
+  `src/backend/Api.Tests/Integration/MovementEndpointTests.cs` (+1 teste); `README.md`
+- Testes: `dotnet test` 111/111 verdes
+- ADR relacionado: 0006
+
+## 2026-08-31 — Deep Copilot (Frontend: toggle de tema sem conflito com o "Sair" no extrato)
+- Ação: o `ThemeToggle` (flutuante, `fixed top-4 right-4`) era global no `App` e conflitava com o
+  botão "Sair" do extrato em telas pequenas. Agora o toggle é renderizado por página: fixo no login
+  e **inline no header do extrato**, ao lado do "Sair" (prop `className` no `ThemeToggle` para o
+  posicionamento). Adicionado polyfill de `matchMedia` no setup do Vitest (jsdom não implementa) —
+  o `useTheme` consulta `prefers-color-scheme` ao montar o toggle nos testes
+- Motivo: pedido do usuário
+- Arquivos alterados: `src/frontend/src/components/ThemeToggle.tsx`, `src/frontend/src/App.tsx`,
+  `src/frontend/src/pages/LoginPage.tsx`, `src/frontend/src/pages/ExtratoPage.tsx`,
+  `src/frontend/src/pages/ExtratoPage.test.tsx` (+1 asserção), `src/frontend/src/test/setup.ts`
+- Testes: `npm test` 46/46; `npm run lint` e `npm run build` verdes
+- ADR relacionado: 0004 (tela de extrato)
+
+## 2026-09-01 — Deep Copilot (SonarQube: primeira análise do frontend e limpeza de issues)
+- Ação: executada a primeira análise do frontend no SonarQube local (ADR 0005) — Docker Desktop
+  iniciado, container `sonarqube` (lts-community) no ar, token `dindin-scan` gerado e scanner via
+  imagem oficial (`sonarsource/sonar-scanner-cli`, sem Java local) com `SONAR_HOST_URL`/`SONAR_TOKEN`.
+  Resultado inicial: 2 bugs (falso positivo do parser CSS `css:S4662` em `src/index.css` — at-rules
+  do Tailwind v4 `@custom-variant`/`@theme`), 0 code smells, 0 vulnerabilidades, cobertura 73,5%,
+  duplicação 0%. Correção: `src/index.css` excluído da análise em `sonar-project.properties` e os 2
+  issues marcados como WontFix; re-análise → **0 bugs, 0 code smells, 0 vulnerabilidades**
+- Motivo: pedido do usuário — ajustar os erros do SonarQube
+- Arquivos alterados: `src/frontend/sonar-project.properties`; docs: `docs/FRONTEND_DEV_CHECKLIST.md`
+- Observações: (1) `docker run ... -Dsonar.host.url=...` falha ("Unrecognized option: .host.url=...")
+  — usar as env `SONAR_HOST_URL`/`SONAR_TOKEN`; (2) cobertura em 73,5% (meta da Fase 6 é ≥ 80%);
+  (3) interface em http://localhost:9000 (admin/admin; token `dindin-scan`)
+- Testes: nenhum código de app alterado; re-análise SonarQube com 0 issues abertas
+- ADR relacionado: 0005
