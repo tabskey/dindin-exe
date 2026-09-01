@@ -131,9 +131,9 @@ describe('login', () => {
 })
 
 describe('createAccount', () => {
-  const input = { name: 'Novo User', cpf: '444.444.444-44', password: 'senha123' }
+  const input = { name: 'Novo User', cpf: '444.444.444-44', password: 'senha123', accountType: 1 }
 
-  it('faz POST em /accounts com accountType 0', async () => {
+  it('faz POST em /accounts com o accountType escolhido', async () => {
     fetchMock.mockResolvedValue(fakeResponse(201, { id: 2, ...input }))
 
     await createAccount(input)
@@ -141,7 +141,7 @@ describe('createAccount', () => {
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/accounts')
     expect(init?.method).toBe('POST')
-    expect(JSON.parse(String(init?.body))).toEqual({ ...input, accountType: 0 })
+    expect(JSON.parse(String(init?.body))).toEqual(input)
   })
 
   it('envia Idempotency-Key quando fornecida', async () => {

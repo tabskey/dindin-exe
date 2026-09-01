@@ -147,12 +147,12 @@ export function login(cpf: string, password: string): Promise<LoginResponse> {
 }
 
 export function createAccount(
-  input: { name: string; cpf: string; password: string },
+  input: { name: string; cpf: string; password: string; accountType: number },
   idempotencyKey?: string,
 ): Promise<AccountDto> {
   return request('/accounts', {
     method: 'POST',
-    body: JSON.stringify({ ...input, accountType: 0 }),
+    body: JSON.stringify(input),
     headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
   })
 }

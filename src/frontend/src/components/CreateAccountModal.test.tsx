@@ -62,11 +62,32 @@ describe('CreateAccountModal', () => {
 
     await waitFor(() => expect(mockCreateAccount).toHaveBeenCalledTimes(1))
     const [input, idempotencyKey] = mockCreateAccount.mock.calls[0]
-    expect(input).toEqual({ name: 'Ana Teste', cpf: '111.222.333-44', password: 'senha123' })
+    expect(input).toEqual({ name: 'Ana Teste', cpf: '111.222.333-44', password: 'senha123', accountType: 0 })
     expect(idempotencyKey).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     )
     expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onCreated).toHaveBeenCalledWith('111.222.333-44')
+  })
+
+  it('cria conta Poupança quando a opção é selecionada', async () => {
+    const user = userEvent.setup()
+    mockCreateAccount.mockResolvedValue({
+      id: 2,
+      accountNumber: '00316-42',
+      name: 'Ana Teste',
+      cpf: '111.222.333-44',
+      accountType: 1,
+      createdAt: '2026-08-31T00:00:00Z',
+    })
+    renderModal()
+    await fillValidForm(user)
+    await user.click(screen.getByRole('radio', { name: 'Conta Poupança' }))
+    await user.click(screen.getByRole('button', { name: 'Criar' }))
+
+    await waitFor(() => expect(mockCreateAccount).toHaveBeenCalledTimes(1))
+    const [input] = mockCreateAccount.mock.calls[0]
+    expect(input).toEqual({ name: 'Ana Teste', cpf: '111.222.333-44', password: 'senha123', accountType: 1 })
     expect(onCreated).toHaveBeenCalledWith('111.222.333-44')
   })
 
