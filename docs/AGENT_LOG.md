@@ -891,3 +891,17 @@
   `frontend/src/pages/ExtratoPage.test.tsx`, `docs/AGENT_LOG.md`
 - Testes: frontend 81/81 (vitest), lint e build limpos; E2E 6/6 no Docker
 - ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (docs: README, ARCHITECTURE e APRESENTACAO atualizados)
+- Ação: pedido do usuário — refletir nos documentos as mudanças do hotfix (label com número da
+  conta, cabeçalho com número/tipo, seletor de tipo no cadastro).
+- README: exemplo de criação de conta com `accountType` (0 Corrente / 1 Poupança), linha do
+  endpoint `/accounts`, seção de frontend (seletor + cabeçalho), contagens de testes
+  (backend 128, frontend 88 = 82 Vitest + 6 E2E) e cobertura (94,3%).
+- ARCHITECTURE: modelo de domínio (AccountType escolhido no cadastro; label da contraparte com
+  número da conta), seção Contraparte (CounterpartyAccountNumber + precedência) e endpoints.
+- APRESENTACAO: linhas novas de decisão (tipo no cadastro, cabeçalho, label único), números de
+  qualidade e referências (ADR 0001 a 0007). Primeiro commit do arquivo (estava untracked).
+- Arquivos alterados: `README.md`, `docs/ARCHITECTURE.md`, `docs/APRESENTACAO.md`,
+  `docs/AGENT_LOG.md`
+- ADR relacionado: 0007
