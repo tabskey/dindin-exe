@@ -26,6 +26,10 @@ function getInitials(name: string): string {
   return (first + last).toUpperCase()
 }
 
+function accountTypeLabel(type: number | undefined): string {
+  return type === 1 ? 'Conta Poupança' : 'Conta Corrente'
+}
+
 // Fetch puro, sem setState — chamável de effect/handler sem acionar a regra
 // react-hooks/set-state-in-effect; o componente aplica o resultado em callbacks
 // (setState em callback assíncrono é permitido pela regra).
@@ -141,10 +145,15 @@ export function ExtratoPage() {
                 initials
               )}
             </button>
-            <h1 className="truncate">
-              <span className="font-bree text-xl text-accent">Olá,</span>
-              <span className="text-lg font-bold"> {account?.name}</span>
-            </h1>
+            <div className="min-w-0">
+              <h1 className="truncate">
+                <span className="font-bree text-xl text-accent">Olá,</span>
+                <span className="text-lg font-bold"> {account?.name}</span>
+              </h1>
+              <p className="mt-0.5 truncate text-xs text-muted">
+                Conta {account?.accountNumber} · {accountTypeLabel(account?.accountType)}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle className="static" />

@@ -74,6 +74,7 @@ describe('ExtratoPage', () => {
     expect(await screen.findByText(/1\.250,50/)).toBeInTheDocument()
     expect(screen.getByText(/Olá/)).toBeInTheDocument()
     expect(screen.getByText(/Ana Teste/)).toBeInTheDocument()
+    expect(screen.getByText(/Conta 00315-41 · Conta Corrente/)).toBeInTheDocument()
     expect(screen.getByText('AT')).toBeInTheDocument()
     expect(screen.getByText('30/08/2026')).toBeInTheDocument()
     expect(screen.getAllByText('Boca do caixa')).toHaveLength(3)
