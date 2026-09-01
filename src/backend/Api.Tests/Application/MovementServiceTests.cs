@@ -113,6 +113,17 @@ public class MovementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_Debit_WithoutCounterparty_UsesAutoWithdrawalLabel()
+    {
+        AddAccount(1, 100);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Debit, 40));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("AUTO-SAQUE 111-11 CC", result.Value!.Counterparty);
+    }
+
+    [Fact]
     public async Task CreateAsync_WithUnknownCounterpartyCpf_FailsAndKeepsBalance()
     {
         var account = AddAccount(1, 100);

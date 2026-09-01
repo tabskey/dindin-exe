@@ -1,17 +1,17 @@
 import { ArrowLeft, Image, Upload, X } from 'lucide-react'
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useRef, useState } from 'react'
 import { updateAvatar } from '../lib/api'
 import { Modal } from './Modal'
 
 interface AvatarModalProps {
-  open: boolean
-  accountId: number
-  name: string
-  initials: string
-  avatarUrl: string | null
-  onClose: () => void
+  readonly open: boolean
+  readonly accountId: number
+  readonly name: string
+  readonly initials: string
+  readonly avatarUrl: string | null
+  readonly onClose: () => void
   // Chamado após um upload bem-sucedido para o pai recarregar o avatar.
-  onAvatarUpdated: () => void
+  readonly onAvatarUpdated: () => void
 }
 
 export function AvatarModal({
@@ -28,7 +28,19 @@ export function AvatarModal({
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  const [lastOpen, setLastOpen] = useState(open)
+
+  // Reset ao fechar: estado derivado da prop `open`, ajustado durante a
+  // renderização (padrão recomendado — sem efeito, evita cascade de renders).
+  if (lastOpen !== open) {
+    setLastOpen(open)
+    if (!open) {
+      setViewing(false)
+      setError('')
+    }
+  }
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     // Zera o valor cedo para permitir escolher o mesmo arquivo de novo.
     event.target.value = ''

@@ -566,3 +566,100 @@
 - Testes: backend `dotnet test` 109/109 verdes; frontend `npm test` 46/46, `npm run lint` e
   `npm run build` verdes
 - ADR relacionado: 0006 (Aceito)
+
+## 2026-08-31 — Deep Copilot (Backend: label do saque sem contraparte)
+- Ação: saque sem contraparte passou a usar o label `AUTO-SAQUE {NNN-NN} CC` (antes era
+  `AUTO-DEPOSITO`, incorreto); adicionado `CounterpartyLabel.AutoWithdrawal` e o `MovementService`
+  escolhe o label pelo tipo (crédito → `AUTO-DEPOSITO`, débito → `AUTO-SAQUE`)
+- Motivo: pedido do usuário — o extrato mostrava "AUTO DEPOSITO" para saques
+- Arquivos alterados: `src/backend/Domain/Entities/CounterpartyLabel.cs`,
+  `src/backend/Application/Services/MovementService.cs`,
+  `src/backend/Api.Tests/Application/MovementServiceTests.cs` (+1 teste),
+  `src/backend/Api.Tests/Integration/MovementEndpointTests.cs` (+1 teste); `README.md`
+- Testes: `dotnet test` 111/111 verdes
+- ADR relacionado: 0006
+
+## 2026-08-31 — Deep Copilot (Frontend: toggle de tema sem conflito com o "Sair" no extrato)
+- Ação: o `ThemeToggle` (flutuante, `fixed top-4 right-4`) era global no `App` e conflitava com o
+  botão "Sair" do extrato em telas pequenas. Agora o toggle é renderizado por página: fixo no login
+  e **inline no header do extrato**, ao lado do "Sair" (prop `className` no `ThemeToggle` para o
+  posicionamento). Adicionado polyfill de `matchMedia` no setup do Vitest (jsdom não implementa) —
+  o `useTheme` consulta `prefers-color-scheme` ao montar o toggle nos testes
+- Motivo: pedido do usuário
+- Arquivos alterados: `src/frontend/src/components/ThemeToggle.tsx`, `src/frontend/src/App.tsx`,
+  `src/frontend/src/pages/LoginPage.tsx`, `src/frontend/src/pages/ExtratoPage.tsx`,
+  `src/frontend/src/pages/ExtratoPage.test.tsx` (+1 asserção), `src/frontend/src/test/setup.ts`
+- Testes: `npm test` 46/46; `npm run lint` e `npm run build` verdes
+- ADR relacionado: 0004 (tela de extrato)
+
+## 2026-09-01 — Deep Copilot (SonarQube: primeira análise do frontend e limpeza de issues)
+- Ação: executada a primeira análise do frontend no SonarQube local (ADR 0005) — Docker Desktop
+  iniciado, container `sonarqube` (lts-community) no ar, token `dindin-scan` gerado e scanner via
+  imagem oficial (`sonarsource/sonar-scanner-cli`, sem Java local) com `SONAR_HOST_URL`/`SONAR_TOKEN`.
+  Resultado inicial: 2 bugs (falso positivo do parser CSS `css:S4662` em `src/index.css` — at-rules
+  do Tailwind v4 `@custom-variant`/`@theme`), 0 code smells, 0 vulnerabilidades, cobertura 73,5%,
+  duplicação 0%. Correção: `src/index.css` excluído da análise em `sonar-project.properties` e os 2
+  issues marcados como WontFix; re-análise → **0 bugs, 0 code smells, 0 vulnerabilidades**
+- Motivo: pedido do usuário — ajustar os erros do SonarQube
+- Arquivos alterados: `src/frontend/sonar-project.properties`; docs: `docs/FRONTEND_DEV_CHECKLIST.md`
+- Observações: (1) `docker run ... -Dsonar.host.url=...` falha ("Unrecognized option: .host.url=...")
+  — usar as env `SONAR_HOST_URL`/`SONAR_TOKEN`; (2) cobertura em 73,5% (meta da Fase 6 é ≥ 80%);
+  (3) interface em http://localhost:9000 (admin/admin; token `dindin-scan`)
+- Testes: nenhum código de app alterado; re-análise SonarQube com 0 issues abertas
+- ADR relacionado: 0005
+
+## 2026-09-01 — Deep Copilot (Frontend: cobertura ≥ 80% no SonarQube)
+- Ação: cobertura do frontend subiu de 73,5% para **95,7%** no SonarQube (meta da Fase 6: ≥ 80%),
+  com 79/79 testes. Principais adições: `src/lib/api.test.ts` (22 testes do client HTTP — token,
+  erros por status, idempotência, avatar; `api.ts` em 100%), `ThemeToggle.test.tsx` (alternância
+  de tema) e testes de ramos em `MovementModal` (número de conta inválido, alternância de toggles,
+  submit duplo), `AvatarModal` (sem arquivo, clique no seletor), `ExtratoPage` (upload de avatar →
+  reloadAvatar, fechamento dos modais) e `LoginPage` (submit duplo, fechamento e criação via modal)
+- Motivo: pedido do usuário — fechar a Fase 6 com cobertura ≥ 80%
+- Arquivos alterados: criados `src/frontend/src/lib/api.test.ts` e
+  `src/frontend/src/components/ThemeToggle.test.tsx`; editados `AvatarModal.test.tsx`,
+  `MovementModal.test.tsx`, `ExtratoPage.test.tsx`, `LoginPage.test.tsx` e `AvatarModal.tsx`
+  (reset ao fechar sem efeito — rule `react-hooks/set-state-in-effect`); docs:
+  `docs/FRONTEND_DEV_CHECKLIST.md`
+- Observações: (1) `apply_patch` multi-hunk falhou em alguns arquivos de teste (relatava sucesso
+  sem persistir) — refeito com `str_replace`/`write_file`; (2) o eslint agora exige reset de
+  estado durante a renderização (sem setState em efeito)
+- Testes: `npm test` 79/79; `npm run lint` e `npm run build` verdes; SonarQube: cobertura 95,7%,
+  0 bugs, 0 code smells, 0 vulnerabilidades
+- ADR relacionado: 0005
+
+## 2026-09-01 — Deep Copilot (Fase 6: E2E Playwright + documentação final)
+- Ação: `e2e/login.spec.ts` reescrito com os fluxos completos (smoke, login → extrato, depósito
+  com saldo +50, saque com saldo −20 e criar conta → CPF preenchido), usando
+  `data-testid="balance-value"` no card de saldo (ExtratoPage) para leitura estável do valor.
+  Stack do Docker: `docker compose up -d --build`; a API falhava no boot (volume com schema
+  antigo, `table "Accounts" already exists` na migração recriada do ADR 0006) — backup do DB em
+  `dindin-dev-db-backup.db`, `docker compose down -v` e volume recriado. E2E: **5/5 verdes**.
+  Docs: ADR 0004/0005 ganharam seção "Decisões como executadas (Fase 6)"; README atualizado
+  (status do frontend completo, modo dev sem Nginx, seção de testes do frontend com 84 testes,
+  estrutura); checklist da Fase 6 marcado completo.
+- Motivo: pedido do usuário — seguir para a última etapa (Fase 6)
+- Arquivos alterados: `src/frontend/e2e/login.spec.ts`, `src/frontend/src/pages/ExtratoPage.tsx`
+  (data-testid no saldo), `docs/FRONTEND_DEV_CHECKLIST.md`, `docs/AGENT_LOG.md`, `README.md`,
+  `docs/adr/0004-frontend-sessao-e-client-de-api.md`, `docs/adr/0005-testes-e-qualidade-no-frontend.md`;
+  criado `dindin-dev-db-backup.db` (backup do volume recriado)
+- Observações: (1) o locator do diálogo de movimentação não pode filtrar por nome ("Depósito"),
+  pois o título muda para "Saque" ao alternar; (2) o título do diálogo vira o nome acessível do
+  `role=dialog` — usado `page.getByRole('dialog')` sem filtro
+- Testes: `npm run test:e2e` 5/5; `npm test` 79/79, lint e build verdes (rodados na sequência)
+- ADR relacionado: 0004, 0005, 0006
+
+## 2026-09-01 — Deep Copilot (docs: arquitetura do frontend + material de apresentação)
+- Ação: README ganhou a subseção "Frontend" na Arquitetura (navegação, sessão, dados, componentes,
+  tema), a árvore interna de `src/frontend` na Estrutura e o link para o novo
+  `docs/APRESENTACAO.md`; criado `docs/APRESENTACAO.md` com o resumo consolidado das decisões e
+  dos porquês (backend e frontend), números de qualidade (109 testes/95,3% no backend; 84
+  testes/95,7% no frontend) e um roteiro de apresentação sugerido; árvore de `docs/` no README
+  agora inclui `FRONTEND_DEV_CHECKLIST.md` (estava ausente)
+- Motivo: pedido do usuário — material completo para apresentação
+- Arquivos alterados: criado `docs/APRESENTACAO.md`; editados `README.md` e `docs/AGENT_LOG.md`
+- Observações: decisões e números conferidos contra os ADRs 0001–0006 e `docs/ARCHITECTURE.md`;
+  dependências do frontend validadas no `package.json` (React 19, react-router-dom 7, Tailwind v4,
+  Vite 8, Vitest 3, Playwright 1.62)
+- Testes: sem mudança de código — nenhuma suíte reexecutada
+- ADR relacionado: 0001–0006

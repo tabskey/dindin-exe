@@ -9,6 +9,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
   },
+  // HTML report sempre gerado (playwright-report/) para consulta com `npx playwright show-report`.
+  reporter: [['list'], ['html', { open: 'never' }]],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',

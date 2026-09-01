@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth'
 import { AvatarModal } from '../components/AvatarModal'
 import { MovementModal } from '../components/MovementModal'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { getAvatar, getBalance, getMovements, type MovementDto } from '../lib/api'
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -141,13 +142,16 @@ export function ExtratoPage() {
               <span className="text-lg font-bold"> {account?.name}</span>
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            Sair
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle className="static" />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Sair
+            </button>
+          </div>
         </header>
 
         {loading && <p className="mt-10 text-center text-sm text-muted">Carregando…</p>}
@@ -169,7 +173,7 @@ export function ExtratoPage() {
           <section className="mt-6 w-full">
             <div className="rounded-2xl border border-border bg-balance-bg p-6">
               <p className="text-sm text-muted">Saldo</p>
-              <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format((balance ?? 0) / 100)}</p>
+              <p data-testid="balance-value" className="mt-1 text-3xl font-bold tabular-nums">{brl.format((balance ?? 0) / 100)}</p>
             </div>
 
             <h2 className="mb-2 mt-8 text-sm font-semibold text-muted">Movimentações</h2>

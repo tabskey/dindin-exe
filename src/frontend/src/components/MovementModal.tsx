@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, useState } from 'react'
 import { createMovement, getBalance, type MovementType } from '../lib/api'
 import { maskBRL, maskCpf, parseBRLToCents } from '../lib/masks'
 import { Modal } from './Modal'
@@ -6,11 +6,11 @@ import { Modal } from './Modal'
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
 interface MovementModalProps {
-  open: boolean
-  accountId: number
-  onClose: () => void
+  readonly open: boolean
+  readonly accountId: number
+  readonly onClose: () => void
   // Chamado após sucesso, para o extrato atualizar saldo e histórico.
-  onSuccess: () => void
+  readonly onSuccess: () => void
 }
 
 // "Pra quem?" no depósito: identificar a contraparte por CPF ou número da conta;
@@ -54,7 +54,7 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
     onClose()
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) {
       return

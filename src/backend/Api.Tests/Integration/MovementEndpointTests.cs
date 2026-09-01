@@ -42,6 +42,20 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Debit_WithoutCounterparty_UsesAutoWithdrawalLabel()
+    {
+        var (id, cpf, token) = await _factory.RegisterAsync("Titular");
+        await _factory.PostAsync($"/accounts/{id}/movements", new { type = 0, amount = 50 }, token, "dp-prime");
+
+        var response = await _factory.PostAsync($"/accounts/{id}/movements",
+            new { type = 1, amount = 10 }, token, "saque-auto");
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
+        Assert.Equal($"AUTO-SAQUE {ApiFactory.MaskCpf(cpf)} CC", movement!.Counterparty);
+    }
+
+    [Fact]
     public async Task Credit_WithUnknownCounterparty_ReturnsBadRequest()
     {
         var (id, _, token) = await _factory.RegisterAsync("Titular");

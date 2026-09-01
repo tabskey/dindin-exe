@@ -32,7 +32,7 @@ de qualidade com cobertura.
   `jsdom`; mocks com `vi` (`vi.fn`/`vi.mock`).
 - **Playwright** (`@playwright/test`) para E2E: fluxos completos no navegador (login → extrato →
   depósito/saque; criar conta → login preenchido), contra o app com a API no ar (Docker ou dev).
-- **SonarQube local** via `docker-compose.yml` (serviço `sonarqube`, Community, sem conta) +
+- **SonarQube local** via `docker-compose.sonarqube.yml` (serviço `sonarqube`, Community, sem conta) +
   `sonar-project.properties` consumindo `coverage/lcov.info` do Vitest; meta de cobertura de linhas
   **≥ 80%**, alinhada à do backend.
 - Scripts no `package.json`: `test` (vitest run), `test:watch`, `coverage` (com lcov),
@@ -47,3 +47,16 @@ de qualidade com cobertura.
 - A decisão "testes adiados" do ADR 0004 fica substituída por este ADR.
 - Em aberto (não bloqueia): gate de cobertura no CI do frontend (hoje a análise é local, como era
   o backend antes do `ci-test.yml`).
+
+## Decisões como executadas (Fase 6)
+
+- **SonarQube local** roda via `docker-compose.sonarqube.yml` (arquivo dedicado, fora do compose
+  principal de dev) — interface em http://localhost:9000.
+- **Análise executada** com o scanner em container (`sonarsource/sonar-scanner-cli` + env
+  `SONAR_HOST_URL`/`SONAR_TOKEN`) — sem Java local; `npm run coverage` gera o `lcov`.
+- **`src/index.css` excluído** da análise: o parser CSS do SonarQube não suporta at-rules do
+  Tailwind v4 (`@custom-variant`, `@theme`) — falso positivo S4662 resolvido por exclusão + WontFix.
+- **Resultado**: cobertura de linhas **95,7%** (meta ≥ 80%), **0 bugs, 0 code smells, 0
+  vulnerabilidades**, 0% de duplicação — com 79 testes Vitest + 5 E2E Playwright (login → extrato →
+  depósito → saque; criar conta → login preenchido).
+- **Continua em aberto**: gate de cobertura no CI do frontend (a análise segue local).
