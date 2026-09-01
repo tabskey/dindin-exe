@@ -134,7 +134,7 @@ O token deve ser enviado como `Authorization: Bearer <jwt>` nas rotas protegidas
 | ------ | -------------------------- | ---- | ---------------------------------------------------------------------------- |
 | `POST` | `/auth/login`              | —    | Autentica por CPF + senha e devolve JWT                                      |
 | `POST` | `/accounts`                | —    | Cria uma conta (`Idempotency-Key` opcional)                                  |
-| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf`/`counterpartyAccountNumber` opcionais) |
+| `POST` | `/accounts/{id}/movements` | ✔    | Entrada/saída na própria conta; depósito com contraparte vira **transferência** (`Idempotency-Key` obrigatório) |
 | `GET`  | `/accounts/{id}/balance`   | ✔    | Consulta o saldo disponível                                                  |
 | `GET`  | `/accounts/{id}/movements` | ✔    | Consulta o histórico de movimentações paginado                               |
 | `POST` | `/accounts/{id}/avatar`    | ✔    | Envia avatar (multipart, JPEG/PNG/WebP até 512 KB)                           |
@@ -155,19 +155,18 @@ Content-Type: application/json
 }
 ```
 
-`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
+`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito, `1` = débito. A chave de idempotência garante que repetir a requisição não duplica a movimentação.
 
-**Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
+**Contraparte** (quem é a outra parte da movimentação):
 
-- Sem contraparte no **depósito** → `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
-- Sem contraparte no **saque** → `AUTO-SAQUE 111-11 CC` (o próprio titular).
-- Com `counterpartyCpf` → resolve a conta pelo CPF e grava o label (ex.: `BRUNO TESTE 222-22 CC`).
-- Com `counterpartyAccountNumber` → resolve a conta pelo número (ex.: `00315-41`); tem precedência sobre o CPF.
-- CPF ou conta inexistente → erro `400`.
+- Depósito **sem** contraparte → auto-depósito (`AUTO-DEPOSITO 111-11 CC`): crédito na própria conta.
+- Saque → auto-saque (`AUTO-SAQUE 111-11 CC`): débito na própria conta; contraparte não é aceita em saque.
+- Depósito **com** `counterpartyCpf` ou `counterpartyAccountNumber` → **transferência**: débito na sua conta e crédito na conta do destinatário; os dois extratos registram (o seu como saída "para {destinatário}", o dele como entrada "de {você}"). `counterpartyAccountNumber` tem precedência sobre o CPF.
+- Destinatário inexistente, transferência para si mesmo ou saldo insuficiente → erro `400`.
 
 A regra principal é simples:
 
-**Crédito entra. Débito sai. Saldo negativo não passa.**
+**Crédito entra. Débito sai. Depósito com contraparte move o dinheiro. Saldo negativo não passa.**
 
 ---
 

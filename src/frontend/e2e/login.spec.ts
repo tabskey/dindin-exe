@@ -82,6 +82,45 @@ test('saque: o saldo diminui', async ({ page }) => {
     .toBe(before - 20)
 })
 
+test('transferência: o valor sai do remetente e cai no destinatário', async ({ page }) => {
+  // Baseline do destinatário (Bruno do seed).
+  await page.goto('/login')
+  await page.getByPlaceholder('000.000.000-00').fill('222.222.222-22')
+  await page.getByPlaceholder('Sua senha').fill(SEED_PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByTestId('balance-value')).toBeVisible()
+  const brunoBefore = await readBalance(page)
+  await page.getByRole('button', { name: 'Sair' }).click()
+
+  // Ana transfere R$ 10,00 para Bruno por CPF.
+  await login(page)
+  const anaBefore = await readBalance(page)
+  await page.getByRole('button', { name: 'Nova movimentação' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByPlaceholder('000.000.000-00').fill('222.222.222-22')
+  await dialog.getByPlaceholder('0,00').fill('10,00')
+  await dialog.getByRole('button', { name: 'Depositar' }).click()
+
+  await expect(dialog.getByText('Transferência realizada')).toBeVisible()
+  await expect(dialog.getByText(/Para BRUNO TESTE 222-22 CC/)).toBeVisible()
+  await dialog.getByRole('button', { name: 'Concluir' }).click()
+  await expect(dialog).not.toBeVisible()
+
+  await expect
+    .poll(() => readBalance(page), { timeout: 10_000 })
+    .toBe(anaBefore - 10)
+
+  // Confere o crédito na conta do destinatário.
+  await page.getByRole('button', { name: 'Sair' }).click()
+  await page.getByPlaceholder('000.000.000-00').fill('222.222.222-22')
+  await page.getByPlaceholder('Sua senha').fill(SEED_PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByTestId('balance-value')).toBeVisible()
+  await expect
+    .poll(() => readBalance(page), { timeout: 10_000 })
+    .toBe(brunoBefore + 10)
+})
+
 test('criar conta → login com CPF preenchido', async ({ page }) => {
   const cpf = uniqueCpf()
 

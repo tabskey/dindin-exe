@@ -88,17 +88,99 @@ public class MovementServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WithCounterpartyCpf_SetsCounterpartyLabel()
+    public async Task CreateAsync_TransferByCpf_DebitsOwnerAndCreditsRecipient()
     {
-        AddAccount(1, 0);
+        var ana = AddAccount(1, 100);
         var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
         joao.SetId(2);
         _accounts.Accounts.Add(joao);
 
-        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 100, "222.222.222-22"));
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 40, "222.222.222-22"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("JOAO TESTE 222-22 CC", result.Value!.Counterparty);
+        Assert.Equal(60, ana.Balance);
+        Assert.Equal(40, joao.Balance);
+
+        var debit = _movements.Movements.Single(m => m.AccountId == 1);
+        var credit = _movements.Movements.Single(m => m.AccountId == 2);
+        Assert.Equal(MovementType.Debit, debit.Type);
+        Assert.Equal("JOAO TESTE 222-22 CC", debit.Counterparty);
+        Assert.Equal(MovementType.Credit, credit.Type);
+        Assert.Equal("ANA TESTE 111-11 CC", credit.Counterparty);
+
+        Assert.Equal(1, result.Value!.AccountId);
+        Assert.Equal(MovementType.Debit, result.Value.Type);
+        Assert.Equal("JOAO TESTE 222-22 CC", result.Value.Counterparty);
+    }
+
+    [Fact]
+    public async Task CreateAsync_TransferWithInsufficientOwnerBalance_Fails()
+    {
+        var ana = AddAccount(1, 10);
+        var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
+        joao.SetId(2);
+        _accounts.Accounts.Add(joao);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 20, "222.222.222-22"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InsufficientBalance, result.Error?.Code);
+        Assert.Equal(10, ana.Balance);
+        Assert.Equal(0, joao.Balance);
+        Assert.Empty(_movements.Movements);
+    }
+
+    [Fact]
+    public async Task CreateAsync_TransferToSelf_Fails()
+    {
+        var ana = AddAccount(1, 100);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 10, "111.111.111-11"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InvalidRequest, result.Error?.Code);
+        Assert.Equal(100, ana.Balance);
+        Assert.Empty(_movements.Movements);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DebitWithCounterparty_Fails()
+    {
+        var ana = AddAccount(1, 100);
+        var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
+        joao.SetId(2);
+        _accounts.Accounts.Add(joao);
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Debit, 10, "222.222.222-22"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InvalidRequest, result.Error?.Code);
+        Assert.Equal(100, ana.Balance);
+        Assert.Equal(0, joao.Balance);
+        Assert.Empty(_movements.Movements);
+    }
+
+    [Fact]
+    public async Task CreateAsync_TransferOnConcurrencyConflict_ReloadsBothAndRetries()
+    {
+        var ana = AddAccount(1, 100);
+        var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
+        joao.SetId(2);
+        _accounts.Accounts.Add(joao);
+        _movements.ConcurrencyFailuresRemaining = 1;
+        _accounts.OnReload = () =>
+        {
+            ana.SetBalance(100);
+            joao.SetBalance(0);
+        };
+
+        var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 30, "222.222.222-22"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(70, ana.Balance);
+        Assert.Equal(30, joao.Balance);
+        Assert.Equal(2, _movements.SaveCallCount);
+        Assert.Equal(2, _movements.Movements.Count);
     }
 
     [Fact]
@@ -137,19 +219,21 @@ public class MovementServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WithCounterpartyAccountNumber_SetsCounterpartyLabel()
+    public async Task CreateAsync_TransferByAccountNumber_DebitsOwnerAndCreditsRecipient()
     {
-        AddAccount(1, 0);
+        var ana = AddAccount(1, 100);
         var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
         joao.SetId(2);
         joao.SetAccountNumber("00456-78");
         _accounts.Accounts.Add(joao);
 
         var result = await _service.CreateAsync(1,
-            new CreateMovementRequest(MovementType.Credit, 100, CounterpartyAccountNumber: "00456-78"));
+            new CreateMovementRequest(MovementType.Credit, 40, CounterpartyAccountNumber: "00456-78"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("JOAO TESTE 222-22 CC", result.Value!.Counterparty);
+        Assert.Equal(60, ana.Balance);
+        Assert.Equal(40, joao.Balance);
+        Assert.Equal(2, _movements.Movements.Count);
     }
 
     [Fact]

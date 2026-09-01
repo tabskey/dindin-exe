@@ -37,38 +37,57 @@ public sealed class MovementService : IMovementService
                 new DomainError(DomainErrorCode.AccountNotFound, "Account not found."));
         }
 
-        string counterparty;
+        var hasCounterparty = !string.IsNullOrWhiteSpace(request.CounterpartyCpf)
+            || !string.IsNullOrWhiteSpace(request.CounterpartyAccountNumber);
+
+        // Contraparte só existe no depósito (que, com destinatário, vira transferência).
+        if (hasCounterparty && request.Type != MovementType.Credit)
+        {
+            return Result<MovementDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "Counterparty is only allowed on deposits."));
+        }
+
+        Account? target = null;
         if (!string.IsNullOrWhiteSpace(request.CounterpartyAccountNumber))
         {
-            var byAccountNumber = await _accounts.GetByAccountNumberAsync(request.CounterpartyAccountNumber.Trim(), cancellationToken);
-            if (byAccountNumber is null)
-            {
-                return Result<MovementDto>.Failure(
-                    new DomainError(DomainErrorCode.CounterpartyNotFound, "Counterparty account not found."));
-            }
-
-            counterparty = CounterpartyLabel.For(byAccountNumber);
+            target = await _accounts.GetByAccountNumberAsync(request.CounterpartyAccountNumber.Trim(), cancellationToken);
         }
-        else if (string.IsNullOrWhiteSpace(request.CounterpartyCpf))
+        else if (!string.IsNullOrWhiteSpace(request.CounterpartyCpf))
         {
-            // Sem contraparte: auto-depósito (crédito) ou auto-saque (débito) — o próprio titular.
-            counterparty = request.Type == MovementType.Credit
-                ? CounterpartyLabel.AutoDeposit(account)
-                : CounterpartyLabel.AutoWithdrawal(account);
+            target = await _accounts.GetByCpfAsync(request.CounterpartyCpf.Trim(), cancellationToken);
         }
-        else
+
+        if (hasCounterparty && target is null)
         {
-            var counterpartyAccount = await _accounts.GetByCpfAsync(request.CounterpartyCpf.Trim(), cancellationToken);
-            if (counterpartyAccount is null)
-            {
-                return Result<MovementDto>.Failure(
-                    new DomainError(DomainErrorCode.CounterpartyNotFound, "Counterparty account not found."));
-            }
-
-            counterparty = CounterpartyLabel.For(counterpartyAccount);
+            return Result<MovementDto>.Failure(
+                new DomainError(DomainErrorCode.CounterpartyNotFound, "Counterparty account not found."));
         }
 
-        var movementResult = Movement.Create(accountId, request.Type, request.Amount, counterparty);
+        if (target is null)
+        {
+            return await CreateSelfMovementAsync(account, request, cancellationToken);
+        }
+
+        if (target.Id == account.Id)
+        {
+            return Result<MovementDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "Cannot transfer to yourself; leave the counterparty empty for a self deposit."));
+        }
+
+        // GetByCpf/GetByAccountNumber usam AsNoTracking — recarrega rastreado para
+        // alterar o saldo e persistir na mesma transação.
+        target = await _accounts.GetByIdAsync(target.Id, cancellationToken);
+        return await CreateTransferAsync(account, target!, request, cancellationToken);
+    }
+
+    private async Task<Result<MovementDto>> CreateSelfMovementAsync(
+        Account account, CreateMovementRequest request, CancellationToken cancellationToken)
+    {
+        var label = request.Type == MovementType.Credit
+            ? CounterpartyLabel.AutoDeposit(account)
+            : CounterpartyLabel.AutoWithdrawal(account);
+
+        var movementResult = Movement.Create(account.Id, request.Type, request.Amount, label);
         if (!movementResult.IsSuccess)
         {
             return Result<MovementDto>.Failure(movementResult.Error!);
@@ -84,28 +103,97 @@ public sealed class MovementService : IMovementService
         var movement = movementResult.Value!;
         await _movements.AddAsync(movement, cancellationToken);
 
+        var persist = await PersistWithRetryAsync([(account, strategy, request.Amount)], cancellationToken);
+        if (!persist.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(persist.Error!);
+        }
+
+        _logger.LogInformation(
+            "Movement created: id={Id}, account={AccountId}, type={Type}, amount={Amount}, counterparty={Counterparty}",
+            movement.Id, account.Id, request.Type, request.Amount, label);
+        return Result<MovementDto>.Success(ToDto(movement));
+    }
+
+    private async Task<Result<MovementDto>> CreateTransferAsync(
+        Account account, Account target, CreateMovementRequest request, CancellationToken cancellationToken)
+    {
+        var debitStrategy = MovementStrategies.For(MovementType.Debit);
+        var creditStrategy = MovementStrategies.For(MovementType.Credit);
+
+        var debitMovementResult = Movement.Create(account.Id, MovementType.Debit, request.Amount, CounterpartyLabel.For(target));
+        if (!debitMovementResult.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(debitMovementResult.Error!);
+        }
+
+        var creditMovementResult = Movement.Create(target.Id, MovementType.Credit, request.Amount, CounterpartyLabel.For(account));
+        if (!creditMovementResult.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(creditMovementResult.Error!);
+        }
+
+        var debitResult = account.ApplyMovement(debitStrategy, request.Amount);
+        if (!debitResult.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(debitResult.Error!);
+        }
+
+        var creditResult = target.ApplyMovement(creditStrategy, request.Amount);
+        if (!creditResult.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(creditResult.Error!);
+        }
+
+        await _movements.AddAsync(debitMovementResult.Value!, cancellationToken);
+        await _movements.AddAsync(creditMovementResult.Value!, cancellationToken);
+
+        var persist = await PersistWithRetryAsync(
+            [(account, debitStrategy, request.Amount), (target, creditStrategy, request.Amount)],
+            cancellationToken);
+        if (!persist.IsSuccess)
+        {
+            return Result<MovementDto>.Failure(persist.Error!);
+        }
+
+        _logger.LogInformation(
+            "Transfer created: from={From}, to={To}, amount={Amount}",
+            account.Id, target.Id, request.Amount);
+        return Result<MovementDto>.Success(ToDto(debitMovementResult.Value!));
+    }
+
+    // Persiste com retry de concorrência otimista: em conflito de RowVersion,
+    // recarrega TODAS as contas mutadas e reaplica os strategies antes de tentar de
+    // novo. A atomicidade é garantida pelo UnitOfWork do filtro de idempotência
+    // (rollback se qualquer reaplicação falhar).
+    private async Task<Result> PersistWithRetryAsync(
+        IReadOnlyList<(Account Account, IMovementStrategy Strategy, long Amount)> mutations,
+        CancellationToken cancellationToken)
+    {
         for (var attempt = 1; ; attempt++)
         {
             try
             {
                 await _movements.SaveChangesAsync(cancellationToken);
-                break;
+                return Result.Success();
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxSaveAttempts)
             {
-                await _accounts.ReloadAsync(account, cancellationToken);
-                var retryResult = account.ApplyMovement(strategy, request.Amount);
-                if (!retryResult.IsSuccess)
+                foreach (var (account, _, _) in mutations)
                 {
-                    return Result<MovementDto>.Failure(retryResult.Error!);
+                    await _accounts.ReloadAsync(account, cancellationToken);
+                }
+
+                foreach (var (account, strategy, amount) in mutations)
+                {
+                    var result = account.ApplyMovement(strategy, amount);
+                    if (!result.IsSuccess)
+                    {
+                        return Result.Failure(result.Error!);
+                    }
                 }
             }
         }
-
-        _logger.LogInformation(
-            "Movement created: id={Id}, account={AccountId}, type={Type}, amount={Amount}, counterparty={Counterparty}",
-            movement.Id, accountId, request.Type, request.Amount, counterparty);
-        return Result<MovementDto>.Success(ToDto(movement));
     }
 
     public async Task<Result<MovementHistoryDto>> GetHistoryAsync(long accountId, int page, int pageSize, CancellationToken cancellationToken = default)

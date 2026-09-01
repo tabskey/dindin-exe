@@ -826,3 +826,35 @@
   `backend/Api.Tests/Application/AccountServiceTests.cs`, `README.md`, `docs/AGENT_LOG.md`
 - Testes: backend `dotnet test` 125/125 com gate (total 94,83% ≥ 80%), `dotnet format` limpo
 - ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: depósito com contraparte vira transferência)
+- Ação: correção de bug reportado pelo usuário — "depositar pra alguém" creditava o próprio
+  depositante (a contraparte era só um label de exibição, ADR 0002), não o destinatário. Decisão
+  confirmada com o usuário: **transferência** (débito no remetente + crédito no destinatário).
+- Backend:
+  - `MovementService.CreateAsync` reescrito: depósito sem contraparte = auto-depósito (inalterado);
+    depósito com `counterpartyCpf`/`counterpartyAccountNumber` = transferência (2 movimentos, uma
+    transação via UnitOfWork do filtro; resposta = débito do remetente);
+  - `PersistWithRetryAsync` recarrega e reaplica os strategies de TODAS as contas mutadas em
+    conflito de concorrência otimista (antes só a conta do titular);
+  - novas validações: contraparte só em depósito (saque com contraparte → 400) e transferência
+    para si mesmo → 400;
+  - destinatário resolvido via `GetByCpf/GetByAccountNumber` (AsNoTracking) e recarregado
+    rastreado por `Id` para ter o saldo persistido atomicamente.
+- Frontend: `MovementModal` mostra "Transferência realizada" + "Para {destinatário}" quando há
+  contraparte (o saldo exibido na confirmação é o novo saldo do remetente, já debitado).
+- Testes: unitários novos (transferência por CPF/número, saldo insuficiente, para si mesmo, débito
+  com contraparte, retry de concorrência em duas contas); integração reescrita
+  (`Transfer_WithCounterpartyCpf_MovesMoneyBetweenAccounts`,
+  `Transfer_WithCounterpartyAccountNumber_MovesMoneyBetweenAccounts`,
+  `Debit_WithCounterparty_ReturnsBadRequest`); E2E novo (`transferência: o valor sai do remetente
+  e cai no destinatário`, com baseline do destinatário).
+- Docs: novo ADR 0007; README (endpoints + seção de movimentação) atualizados.
+- Arquivos alterados: `backend/Application/Services/MovementService.cs`,
+  `backend/Api.Tests/Application/MovementServiceTests.cs`,
+  `backend/Api.Tests/Integration/MovementEndpointTests.cs`,
+  `backend/Api.Tests/Integration/IdempotencyTests.cs`,
+  `frontend/src/components/MovementModal.tsx`, `frontend/e2e/login.spec.ts`, criado
+  `docs/adr/0007-deposito-com-contraparte-vira-transferencia.md`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: backend `dotnet test` 130/130 com gate (total 94,34% ≥ 80%)
+- ADR relacionado: 0007

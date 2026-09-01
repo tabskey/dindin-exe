@@ -55,6 +55,7 @@ public class IdempotencyTests : IClassFixture<ApiFactory>
     public async Task MovementAudit_RecordsCounterparty()
     {
         var (id, _, token) = await _factory.RegisterAsync("Auditada");
+        await _factory.PostAsync($"/accounts/{id}/movements", new { type = 0, amount = 100 }, token, "audit-fund");
 
         var created = await _factory.PostAsync($"/accounts/{id}/movements",
             new { type = 0, amount = 25, counterpartyCpf = "111.111.111-11" }, token, "audit-counterparty");
