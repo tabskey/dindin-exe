@@ -13,11 +13,11 @@
 
 O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um frontend em **React 19 + Vite + TypeScript**.
 
-> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend também está completo — login, extrato com saldo/histórico, movimentações (depósito/saque com contraparte), avatar e tema claro/escuro, com testes (Vitest + Playwright) e análise de qualidade (SonarQube local). O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md), [`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
+A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
 
-A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/). Para apresentações, há um resumo consolidado das decisões e dos porquês em [`docs/APRESENTACAO.md`](./docs/APRESENTACAO.md).
-
-As regras para agentes de IA que trabalharem neste repositório estão em [`docs/AGENTS.md`](./docs/AGENTS.md).
+<p align="center">
+  <img src="./docs/interface.gif" alt="Tela" />
+</p>
 
 ---
 
@@ -36,16 +36,49 @@ cd <pasta-do-repositorio>
 docker compose up --build
 ```
 
-Isso sobe dois containers:
+Isso sobe três containers:
 
-| Serviço      | URL                    | O que é                                                  |
-| ------------ | ---------------------- | -------------------------------------------------------- |
-| 🖥️ Frontend | `http://localhost`     | React 19 + Vite, build de produção servido via Nginx     |
-| 💸 API       | `http://localhost/api` | .NET 10 Minimal API, acessada via proxy reverso do Nginx |
+| Serviço          | URL                       | O que é                                                  |
+| ---------------- | ------------------------- | -------------------------------------------------------- |
+| 🖥️ Frontend      | `http://localhost`        | React 19 + Vite, build de produção servido via Nginx     |
+| 💸 API            | `http://localhost/api`    | .NET 10 Minimal API, acessada via proxy reverso do Nginx |
+| 🔎 SonarQube     | `http://localhost:9000`   | análise de qualidade, cobertura e code smells            |
 
-O banco SQLite (`dindin.db`) é persistido em um **volume** (`sqlite-data`): os dados sobrevivem a `docker compose down`. Na primeira subida, migrações e seed (contas de teste) são aplicados automaticamente.
+O banco SQLite (`dindin.db`) é persistido em um **volume** (`sqlite-data`): os dados sobrevivem a `docker compose down`. Os dados do SonarQube ficam em volumes próprios e a primeira subida também aplica migrações e seed (contas de teste) da API automaticamente.
 
-> A chave de assinatura do JWT fica **fora do repositório**: copie `.env.example` para `.env`, gere um valor forte em `Jwt__Key` e rode `docker compose up --build`. Sem o `.env`, a API falha no startup com uma mensagem clara pedindo a chave.
+> A chave de assinatura do JWT fica **fora do repositório**: copie `.env.example` para `.env`, gere um valor forte em `Jwt__Key` e rode `docker compose up --build`. Sem o `.env`, a API falha no startup com uma mensagem clara pedindo a chave. A chave de dev funciona pra testes, basta substituir.
+>
+> O SonarQube inicializa em `http://localhost:9000` com login `admin` e senha `dindinexe` ou 'admin' dependendo de como está rodando.
+>
+> Para ambiente local de teste, as credenciais padrão são: `admin / admin`.
+>
+> Observação: o servidor do SonarQube sobe no Docker, mas o scanner da análise precisa de um JDK/Java instalado na máquina ou em um container do scanner. Sem Java, o SonarScanner não consegue rodar.
+
+### Analisando backend + frontend no SonarQube
+
+Para enviar os dois projetos para o SonarQube local:
+
+```bash
+# gere um token em http://localhost:9000 > User > Tokens
+$env:SONAR_TOKEN="<seu-token>"
+
+# backend
+cd src/backend
+
+dotnet tool restore
+dotnet test Api.Tests/Api.Tests.csproj --collect:"XPlat Code Coverage"
+dotnet sonarscanner begin /k:"dindin-exe-backend" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.cs.vscoveragexml.reportsPaths="Api.Tests/TestResults/**/coverage.cobertura.xml"
+dotnet build Dindin.slnx
+dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
+
+# frontend
+cd ../frontend
+npm install
+npm run coverage
+npx sonar-scanner -Dproject.settings=sonar-project.properties -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$env:SONAR_TOKEN
+```
+
+O SonarQube passa a exibir os projetos `dindin-exe-backend` e `dindin-exe-frontend` separadamente.
 
 ### Parando a aplicação
 
@@ -326,10 +359,7 @@ gerenciador de estado global além do React — arquitetura enxuta, por camadas 
   a paleta vive em tokens CSS (`:root`/`.dark` no `index.css`) mapeados via `@theme` do Tailwind
   (mudar cor = editar só os tokens). Um script inline no `index.html` evita flash do tema errado.
 
-Testes e qualidade do frontend estão na seção [🧪 Testes](#-testes); decisões em
-[`docs/adr/0004`](./docs/adr/0004-frontend-sessao-e-client-de-api.md) (navegação, sessão e client)
-e [`docs/adr/0005`](./docs/adr/0005-testes-e-qualidade-no-frontend.md) (Vitest + Playwright +
-SonarQube).
+Testes e qualidade do frontend estão na seção [🧪 Testes](#-testes);
 
 A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
@@ -361,8 +391,8 @@ fluxos completos no navegador). A suíte Vitest roda em ~30s e o E2E em ~7s (má
 - **Playwright** (`npm run test:e2e`): login → extrato → depósito → saque → transferência e criar
   conta → login preenchido; requer o app + API no ar (`docker compose up -d --build`) com o seed
   carregado.
-- **SonarQube local** (`docker-compose.sonarqube.yml`, http://localhost:9000): análise via scanner
-  em container; cobertura de linhas **96,9%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
+- **SonarQube local** (`docker compose up --build`, http://localhost:9000): análise via scanner
+  em container já integrada ao stack principal; cobertura de linhas **96,9%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
 
 ---
 
@@ -401,17 +431,9 @@ src/
 
 docs/
 ├── ARCHITECTURE.md         # Arquitetura completa + diagrama
-├── API_DEV_CHECKLIST.md    # Controle das fases de implementação
-├── APRESENTACAO.md         # Decisões e porquês (material de apresentação)
-├── FRONTEND_DEV_CHECKLIST.md # Controle das fases do frontend
-├── AGENTS.md               # Regras para agentes de IA no repositório
-├── AGENT_LOG.md            # Log de execução dos agentes
-├── adr/                    # Registro de decisões de arquitetura
-├── system-design.png       # Diagrama do system design
-└── arquitetura-sistema-conta.pdf
+└── system-design.png       # Diagrama do system design
 
-docker-compose.yml          # API + frontend + volume SQLite
-docker-compose.sonarqube.yml # SonarQube local (qualidade/cobertura do frontend)
+docker-compose.yml          # API + frontend + SonarQube + volumes
 ```
 
 ---

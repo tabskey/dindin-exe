@@ -21,5 +21,19 @@ services:
     depends_on:
       - api
 
+  sonarqube:
+    image: sonarqube:lts-community
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-logs:/opt/sonarqube/logs
+      - sonarqube-extensions:/opt/sonarqube/extensions
+
 volumes:
   sqlite-data:
+  sonarqube-data:
+  sonarqube-logs:
+  sonarqube-extensions:

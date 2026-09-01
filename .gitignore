@@ -67,3 +67,12 @@ nunit-*.xml
 
 # Node.js / frontend
 node_modules/
+coverage/
+**/coverage/
+coverage*.lcov
+
+# SonarQube / scanner artifacts
+.sonarqube/
+**/.sonarqube/
+.scannerwork/
+**/.scannerwork/
