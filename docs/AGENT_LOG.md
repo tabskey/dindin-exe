@@ -799,3 +799,30 @@
 - Arquivos alterados: nenhum (validação); `docs/AGENT_LOG.md`
 - Testes: E2E 5/5 verdes contra os containers novos
 - ADR relacionado: 0005 (setup do E2E)
+
+## 2026-09-01 — Deep Copilot (hotfix: code review sênior pré-merge)
+- Ação: varredura completa de `main..hotfix` (diff + código-fonte) antes do push. Dois achados
+  Major corrigidos; demais achados registrados como nits sem ação imediata:
+  1. **IdempotencyFilter — corrida de chave concorrente com corpo divergente** (Major): no catch
+     do `IdempotencyRecords` a perdedora reexecutava e devolvia a resposta do vencedor **sem**
+     comparar o hash do request — a perdedora com corpo diferente recebia o 200 do vencedor em
+     vez de 409 (o contrato "mesma chave + request diferente → 409" só valia no caso sequencial).
+     Corrigido: o replay do vencedor agora compara `RequestPath` e `RequestHash` e responde 409
+     em caso de divergência (+ teste `InvokeAsync_KeyRaceWithDifferentRequest_ReturnsConflict`);
+  2. **AccountService — CPF validado ≠ CPF armazenado** (Major): a checagem contava 11 dígitos
+     mas gravava o CPF cru (ex.: `111.111.111-11x` passava e era persistido com o `x`). Corrigido:
+     rejeita qualquer caractere que não seja dígito ou a máscara `000.000.000-00` (+ teoria
+     `CreateAsync_WithMalformedCpf_Fails`).
+- Nits anotados (sem correção nesta rodada): detecção de violação única por substring da mensagem
+  do SQLite (frágil se o provider mudar — app é SQLite-only); descoberta do DTO por `Namespace`
+  em `ComputeRequestHash` (um `is CreateMovementRequest` seria mais robusto); sentinela `"***"`
+  no hash de idempotência colide com uma senha literal `***`; `CreateAccountModal` não reutiliza
+  a `Idempotency-Key` no retry (a unicidade do CPF é quem evita duplicata — 409 confunde um
+  retry pós-timeout de criação bem-sucedida); 429 do rate limiter sem corpo JSON (frontend cai
+  no fallback genérico); mensagens de erro do backend em inglês exibidas como estão.
+- Arquivos alterados: `backend/Application/Filters/IdempotencyFilter.cs`,
+  `backend/Application/Services/AccountService.cs`,
+  `backend/Api.Tests/Application/IdempotencyFilterTests.cs`,
+  `backend/Api.Tests/Application/AccountServiceTests.cs`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: backend `dotnet test` 125/125 com gate (total 94,83% ≥ 80%), `dotnet format` limpo
+- ADR relacionado: —

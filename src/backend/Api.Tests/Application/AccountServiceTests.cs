@@ -43,6 +43,18 @@ public class AccountServiceTests
         Assert.Equal(DomainErrorCode.CpfAlreadyRegistered, result.Error?.Code);
     }
 
+    [Theory]
+    [InlineData("1234567890")]      // 10 dígitos
+    [InlineData("123456789012")]    // 12 dígitos
+    [InlineData("111.111.111-11x")] // 11 dígitos + caractere extra
+    public async Task CreateAsync_WithMalformedCpf_Fails(string cpf)
+    {
+        var result = await _service.CreateAsync(ValidRequest() with { Cpf = cpf });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.InvalidRequest, result.Error?.Code);
+    }
+
     [Fact]
     public async Task CreateAsync_WhenAccountNumberCollides_RetriesWithNewNumber()
     {

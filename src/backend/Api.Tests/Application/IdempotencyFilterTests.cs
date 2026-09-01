@@ -158,6 +158,21 @@ public class IdempotencyFilterTests
     }
 
     [Fact]
+    public async Task InvokeAsync_KeyRaceWithDifferentRequest_ReturnsConflict()
+    {
+        // Corrida de chave concorrente (violação no IdempotencyRecord): a perdedora tem um
+        // corpo DIFERENTE do vencedor já gravado — deve receber 409, não a resposta do vencedor.
+        var unitOfWork = new ThrowingUnitOfWork("UNIQUE constraint failed: IdempotencyRecords.Key");
+        var (context, repository) = BuildContext(
+            "key-1", new object?[] { 1L, Request(20), null!, null!, default(CancellationToken) }, unitOfWork: unitOfWork);
+        repository.Records.Add(IdempotencyRecord.Create("anon:key-1", "/accounts/1/movements", HashOf(Request(10)), 201, "{\"id\":1}"));
+
+        var result = await new IdempotencyFilter(required: true).InvokeAsync(context, PassThrough());
+
+        Assert.Equal(409, (result as IStatusCodeHttpResult)?.StatusCode);
+    }
+
+    [Fact]
     public async Task InvokeAsync_FailingEndpoint_DoesNotCacheFailure()
     {
         var (context, repository) = BuildContext(

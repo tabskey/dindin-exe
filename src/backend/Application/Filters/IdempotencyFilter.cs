@@ -106,7 +106,9 @@ public sealed class IdempotencyFilter : IEndpointFilter
             var winner = await repository.GetByKeyAsync(key!, http.RequestAborted);
             if (winner is not null)
             {
-                return Results.Content(winner.ResponseBody, "application/json", statusCode: winner.ResponseStatusCode);
+                return winner.RequestPath != http.Request.Path.ToString() || winner.RequestHash != requestHash
+                    ? Results.Conflict(new { error = "Idempotency-Key was already used with a different request." })
+                    : Results.Content(winner.ResponseBody, "application/json", statusCode: winner.ResponseStatusCode);
             }
 
             throw;

@@ -53,6 +53,15 @@ public sealed class AccountService : IAccountService
                 new DomainError(DomainErrorCode.InvalidRequest, "CPF must have exactly 11 digits."));
         }
 
+        // Validação de formato consistente com o que é armazenado: só dígitos (e a máscara
+        // 000.000.000-00). Um CPF com 11 dígitos e caracteres extras (ex.: 111.111.111-11x)
+        // não pode ser gravado cru.
+        if (cpf.Any(c => !char.IsDigit(c) && c is not '.' and not '-'))
+        {
+            return Result<AccountDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "CPF must contain only digits (000.000.000-00)."));
+        }
+
         if (await _accounts.GetByCpfAsync(cpf, cancellationToken) is not null)
         {
             return Result<AccountDto>.Failure(

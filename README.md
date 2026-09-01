@@ -318,7 +318,7 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**121 testes, todos verdes** (`dotnet test`):
+**125 testes, todos verdes** (`dotnet test`):
 
 ### Testes unitários
 
@@ -328,7 +328,7 @@ Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, 
 
 `WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 
-Cobertura total de linhas: **94,7%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
+Cobertura total de linhas: **94,8%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
 ### Testes do frontend
 
