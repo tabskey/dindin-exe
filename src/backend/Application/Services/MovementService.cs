@@ -24,6 +24,12 @@ public sealed class MovementService : IMovementService
 
     public async Task<Result<MovementDto>> CreateAsync(long accountId, CreateMovementRequest request, CancellationToken cancellationToken = default)
     {
+        if (!Enum.IsDefined(typeof(MovementType), request.Type))
+        {
+            return Result<MovementDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "Invalid movement type."));
+        }
+
         var account = await _accounts.GetByIdAsync(accountId, cancellationToken);
         if (account is null)
         {

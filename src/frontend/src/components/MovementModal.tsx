@@ -103,9 +103,11 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
         },
         key,
       )
-      idempotencyKeyRef.current = null
-      // O 201 não traz o saldo novo — busca para mostrar na confirmação.
+      // O 201 não traz o saldo novo — busca para mostrar na confirmação. A chave de
+      // idempotência só é descartada depois que o saldo é confirmado: se o getBalance
+      // falhar, o retry reusa a mesma chave e não duplica a movimentação.
       const balanceData = await getBalance(accountId)
+      idempotencyKeyRef.current = null
       setSuccess({ amount: amountValue, balance: balanceData.balance })
       onSuccess()
     } catch (err) {
@@ -240,6 +242,7 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
           <div className="flex gap-3 pt-1">
             <button
               type="button"
+              disabled={submitting}
               onClick={handleClose}
               className="flex-1 rounded-lg border border-border px-3 py-2 font-medium text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >

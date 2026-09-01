@@ -181,6 +181,104 @@ Api → Application → Domain
        Infrastructure
 ```
 
+### Diagrama do system design
+
+```mermaid
+flowchart TB
+
+    %% =========================
+    %% CLIENT
+    %% =========================
+    Client((Client))
+    Browser["Browser (SPA React)"]
+
+    Client --- Browser
+
+    %% =========================
+    %% DOCKER COMPOSE
+    %% =========================
+    subgraph Docker["Docker compose"]
+
+        Frontend["<b>Frontend container (Nginx)</b><br/><br/>Serve build estático + proxy reverso /api"]
+
+        subgraph API[".NET API container (Minimal API)"]
+
+            Endpoints["<b>Endpoints</b><br/><br/>Rotas + filtros de JWT e idempotência"]
+
+            Auth["<b>Auth</b><br/><br/>POST /auth/login → CPF+senha → BCrypt → JWT"]
+
+            Application["<b>Application</b><br/><br/>Services + decorator de auditoria"]
+
+            Domain["<b>Domain</b><br/><br/>Entidades + strategy (crédito/débito) + result pattern"]
+
+            Infrastructure["<b>Infrastructure</b><br/><br/>EF Core + repositórios + lock otimista (RowVersion)"]
+
+            AuditLog["<b>AuditLog</b><br/><br/>Registro de ações (Decorator)"]
+
+            Idempotency["<b>IdempotencyRecord</b><br/><br/>Chave + resposta cacheada"]
+
+            SQLite["<b>SQLite</b><br/><br/>Account (avatar BLOB), Movement,<br/>AuditLog, IdempotencyRecord"]
+
+            Endpoints --> Application
+            Application --> Domain
+            Domain --> Infrastructure
+
+            Endpoints --> Auth
+            Endpoints -.-> AuditLog
+            Endpoints -.-> Idempotency
+
+            Infrastructure --> SQLite
+
+        end
+
+    end
+
+    %% =========================
+    %% SQLITE VOLUME
+    %% =========================
+    Volume["<b>Volume SQLite</b><br/><br/>Persistência fora do container"]
+
+    %% =========================
+    %% EXTERNAL FLOWS
+    %% =========================
+
+    Browser -->|"HTTP (local)"| Frontend
+    Frontend -->|"/api"| Endpoints
+
+    SQLite -->|"arquivo .db"| Volume
+
+    %% Build React
+    BuildReact["build React<br/>(assets estáticos)"]
+    BuildReact -.-> Frontend
+
+    %% JWT returned to client
+    Auth -.->|"JWT devolvido ao client<br/>(usado em Authorization: Bearer)"| Client
+
+    %% =========================
+    %% STYLES
+    %% =========================
+
+    classDef client fill:#3182ce,stroke:#1e5aa8,color:white,stroke-width:2px;
+    classDef frontend fill:#e3f2fd,stroke:#2196f3,color:#123b63,stroke-width:2px;
+    classDef api fill:#eeecff,stroke:#7467e8,color:#27245c,stroke-width:2px;
+    classDef application fill:#def5ed,stroke:#20a979,color:#0d4437,stroke-width:2px;
+    classDef auth fill:#fff0d9,stroke:#d88900,color:#633f00,stroke-width:2px;
+    classDef auxiliary fill:#efedff,stroke:#6357d9,color:#292463,stroke-width:2px;
+    classDef database fill:#f2f0e9,stroke:#99958b,color:#333,stroke-width:2px;
+    classDef volume fill:#f2f0e9,stroke:#99958b,color:#333,stroke-width:2px;
+
+    class Client client;
+    class Frontend frontend;
+    class Endpoints,Application,Domain,Infrastructure application;
+    class Auth auth;
+    class AuditLog,Idempotency auxiliary;
+    class SQLite database;
+    class Volume volume;
+
+    style Docker fill:#f2f0e9,stroke:#99958b,stroke-width:2px
+    style API fill:#eeecff,stroke:#7467e8,stroke-width:2px
+```
+
 Decisões arquiteturais implementadas (motivações em [`docs/adr/`](./docs/adr/)):
 
 * **Strategy** para os tipos de movimentação (crédito/débito);
@@ -220,7 +318,7 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**109 testes, todos verdes** (`dotnet test`):
+**121 testes, todos verdes** (`dotnet test`):
 
 ### Testes unitários
 
@@ -230,12 +328,12 @@ Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, 
 
 `WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 
-Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
+Cobertura total de linhas: **94,7%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
 ### Testes do frontend
 
-**84 testes, todos verdes** — cobertura de linhas **95,7%** (meta ≥ 80%; 0 bugs, 0 code smells,
-0 vulnerabilidades): 79 de componentes/regras (Vitest + Testing Library) e 5 E2E (Playwright,
+**86 testes, todos verdes** — cobertura de linhas **96,9%** (meta ≥ 80%; 0 bugs, 0 code smells,
+0 vulnerabilidades): 81 de componentes/regras (Vitest + Testing Library) e 5 E2E (Playwright,
 fluxos completos no navegador). A suíte Vitest roda em ~30s e o E2E em ~7s (máquina local, Windows).
 
 - **Vitest + Testing Library** (`npm test`): máscaras, client de API (fetch mockado), login,
@@ -244,7 +342,7 @@ fluxos completos no navegador). A suíte Vitest roda em ~30s e o E2E em ~7s (má
 - **Playwright** (`npm run test:e2e`): login → extrato → depósito → saque e criar conta → login
   preenchido; requer o app + API no ar (`docker compose up -d --build`) com o seed carregado.
 - **SonarQube local** (`docker-compose.sonarqube.yml`, http://localhost:9000): análise via scanner
-  em container; cobertura de linhas **95,7%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
+  em container; cobertura de linhas **96,9%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
 
 ---
 

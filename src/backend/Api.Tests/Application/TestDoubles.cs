@@ -8,6 +8,7 @@ internal sealed class FakeAccountRepository : IAccountRepository
 {
     public List<Account> Accounts { get; } = new();
     public Action? OnReload { get; set; }
+    public int AccountNumberCollisionsRemaining { get; set; }
 
     public Task<Account?> GetByIdAsync(long id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Accounts.FirstOrDefault(a => a.Id == id));
@@ -16,7 +17,18 @@ internal sealed class FakeAccountRepository : IAccountRepository
         Task.FromResult(Accounts.FirstOrDefault(a => a.Cpf == cpf));
 
     public Task<Account?> GetByAccountNumberAsync(string accountNumber, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Accounts.FirstOrDefault(a => a.AccountNumber == accountNumber));
+        Task.FromResult(Collide() ? Accounts.FirstOrDefault() : Accounts.FirstOrDefault(a => a.AccountNumber == accountNumber));
+
+    private bool Collide()
+    {
+        if (AccountNumberCollisionsRemaining <= 0)
+        {
+            return false;
+        }
+
+        AccountNumberCollisionsRemaining--;
+        return true;
+    }
 
     public Task AddAsync(Account account, CancellationToken cancellationToken = default)
     {

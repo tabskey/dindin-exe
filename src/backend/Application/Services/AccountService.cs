@@ -10,7 +10,8 @@ namespace Application.Services;
 public sealed class AccountService : IAccountService
 {
     private const int MinPasswordLength = 6;
-    private const int MaxAvatarBytes = 512 * 1024;
+    private const int MaxAccountNumberAttempts = 5;
+    public const int MaxAvatarBytes = 512 * 1024;
     private static readonly HashSet<string> AllowedAvatarContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/jpeg", "image/png", "image/webp"
@@ -39,14 +40,41 @@ public sealed class AccountService : IAccountService
                 new DomainError(DomainErrorCode.WeakPassword, $"Password must have at least {MinPasswordLength} characters."));
         }
 
+        if (!Enum.IsDefined(typeof(AccountType), request.AccountType))
+        {
+            return Result<AccountDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "Invalid account type."));
+        }
+
         var cpf = request.Cpf.Trim();
+        if (cpf.Count(char.IsDigit) != 11)
+        {
+            return Result<AccountDto>.Failure(
+                new DomainError(DomainErrorCode.InvalidRequest, "CPF must have exactly 11 digits."));
+        }
+
         if (await _accounts.GetByCpfAsync(cpf, cancellationToken) is not null)
         {
             return Result<AccountDto>.Failure(
                 new DomainError(DomainErrorCode.CpfAlreadyRegistered, "This CPF is already registered."));
         }
 
-        var account = Account.Create(request.Name.Trim(), cpf, request.AccountType, BC.HashPassword(request.Password));
+        var name = request.Name.Trim();
+        var passwordHash = BC.HashPassword(request.Password);
+        var account = Account.Create(name, cpf, request.AccountType, passwordHash);
+        // O número é aleatório (00xxx-xx): pré-valida a unicidade com retry antes do INSERT.
+        // O índice único no banco é o backstop — a corrida residual vira 503 tratado no filtro.
+        for (var attempt = 1; await _accounts.GetByAccountNumberAsync(account.AccountNumber, cancellationToken) is not null; attempt++)
+        {
+            if (attempt >= MaxAccountNumberAttempts)
+            {
+                return Result<AccountDto>.Failure(
+                    new DomainError(DomainErrorCode.AccountNumberCollision, "Could not allocate a unique account number. Please retry."));
+            }
+
+            account = Account.Create(name, cpf, request.AccountType, passwordHash);
+        }
+
         await _accounts.AddAsync(account, cancellationToken);
         await _accounts.SaveChangesAsync(cancellationToken);
 

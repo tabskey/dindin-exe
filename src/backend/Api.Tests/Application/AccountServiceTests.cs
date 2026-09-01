@@ -43,6 +43,30 @@ public class AccountServiceTests
         Assert.Equal(DomainErrorCode.CpfAlreadyRegistered, result.Error?.Code);
     }
 
+    [Fact]
+    public async Task CreateAsync_WhenAccountNumberCollides_RetriesWithNewNumber()
+    {
+        _accounts.Accounts.Add(Account.Create("Bruno Teste", "222.222.222-22", AccountType.Checking, "hash"));
+        _accounts.AccountNumberCollisionsRemaining = 2;
+
+        var result = await _service.CreateAsync(ValidRequest());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, _accounts.Accounts.Count);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAccountNumberAlwaysCollides_FailsWithCollision()
+    {
+        _accounts.Accounts.Add(Account.Create("Bruno Teste", "222.222.222-22", AccountType.Checking, "hash"));
+        _accounts.AccountNumberCollisionsRemaining = 100;
+
+        var result = await _service.CreateAsync(ValidRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.AccountNumberCollision, result.Error?.Code);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

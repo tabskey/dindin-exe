@@ -47,6 +47,7 @@ export interface CreateMovementRequest {
 
 const API_BASE = '/api'
 const TOKEN_KEY = 'dindin-token'
+const REQUEST_TIMEOUT_MS = 15_000
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -81,6 +82,18 @@ export function registerUnauthorizedHandler(handler: () => void): () => void {
   }
 }
 
+// Timeout para o fetch não ficar pendurado para sempre (rede morta / API fora do ar).
+// AbortController manual em vez de AbortSignal.timeout para funcionar no jsdom dos testes.
+async function fetchWithTimeout(path: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(path, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function errorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { error?: string }
@@ -111,7 +124,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers })
+  const response = await fetchWithTimeout(`${API_BASE}${path}`, { ...init, headers })
 
   if (!response.ok) {
     if (response.status === 401 && token) {
@@ -161,7 +174,7 @@ export async function getAvatar(accountId: number): Promise<Blob | null> {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_BASE}/accounts/${accountId}/avatar`, { headers })
+  const response = await fetchWithTimeout(`${API_BASE}/accounts/${accountId}/avatar`, { headers })
 
   if (response.status === 404) {
     return null
@@ -187,7 +200,7 @@ export async function updateAvatar(accountId: number, file: File): Promise<void>
   const form = new FormData()
   form.append('file', file)
 
-  const response = await fetch(`${API_BASE}/accounts/${accountId}/avatar`, {
+  const response = await fetchWithTimeout(`${API_BASE}/accounts/${accountId}/avatar`, {
     method: 'POST',
     headers,
     body: form,
