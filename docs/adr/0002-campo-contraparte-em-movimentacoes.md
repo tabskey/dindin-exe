@@ -1,6 +1,6 @@
 # 0002. Campo Contraparte em movimentações
 
-Status: Aceito
+Status: Aceito (parcialmente superado por 0007 — o label usa o número da conta, não o CPF mascarado)
 
 ## Contexto
 

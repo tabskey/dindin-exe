@@ -20,6 +20,7 @@ public class MovementServiceTests
     {
         var account = Account.Create("Ana Teste", "111.111.111-11", AccountType.Checking, "hash");
         account.SetId(id);
+        account.SetAccountNumber($"0000{id}-0{id}");
         account.SetBalance(balance);
         _accounts.Accounts.Add(account);
         return account;
@@ -93,6 +94,7 @@ public class MovementServiceTests
         var ana = AddAccount(1, 100);
         var joao = Account.Create("João Teste", "222.222.222-22", AccountType.Checking, "hash");
         joao.SetId(2);
+        joao.SetAccountNumber("00456-78");
         _accounts.Accounts.Add(joao);
 
         var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 40, "222.222.222-22"));
@@ -104,13 +106,13 @@ public class MovementServiceTests
         var debit = _movements.Movements.Single(m => m.AccountId == 1);
         var credit = _movements.Movements.Single(m => m.AccountId == 2);
         Assert.Equal(MovementType.Debit, debit.Type);
-        Assert.Equal("JOAO TESTE 222-22 CC", debit.Counterparty);
+        Assert.Equal("JOAO TESTE 00456-78 CC", debit.Counterparty);
         Assert.Equal(MovementType.Credit, credit.Type);
-        Assert.Equal("ANA TESTE 111-11 CC", credit.Counterparty);
+        Assert.Equal("ANA TESTE 00001-01 CC", credit.Counterparty);
 
         Assert.Equal(1, result.Value!.AccountId);
         Assert.Equal(MovementType.Debit, result.Value.Type);
-        Assert.Equal("JOAO TESTE 222-22 CC", result.Value.Counterparty);
+        Assert.Equal("JOAO TESTE 00456-78 CC", result.Value.Counterparty);
     }
 
     [Fact]
@@ -191,7 +193,7 @@ public class MovementServiceTests
         var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Credit, 100));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("AUTO-DEPOSITO 111-11 CC", result.Value!.Counterparty);
+        Assert.Equal("AUTO-DEPOSITO 00001-01 CC", result.Value!.Counterparty);
     }
 
     [Fact]
@@ -202,7 +204,7 @@ public class MovementServiceTests
         var result = await _service.CreateAsync(1, new CreateMovementRequest(MovementType.Debit, 40));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("AUTO-SAQUE 111-11 CC", result.Value!.Counterparty);
+        Assert.Equal("AUTO-SAQUE 00001-01 CC", result.Value!.Counterparty);
     }
 
     [Fact]

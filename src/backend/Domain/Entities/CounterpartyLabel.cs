@@ -4,31 +4,25 @@ using System.Text;
 namespace Domain.Entities;
 
 /// <summary>
-/// Monta o label de contraparte exibido no extrato: "{NOME} {NNN-NN} CC" (ex.: "JOAO789-09 CC").
-/// Contraparte é sempre outra conta do sistema (resolvida por CPF ou número da conta) ou a própria conta
-/// (auto-depósito "AUTO-DEPOSITO" ou auto-saque "AUTO-SAQUE" — o próprio titular).
+/// Monta o label de contraparte exibido no extrato: "{NOME} {NUMERO} CC" (ex.: "JOAO 00456-78 CC").
+/// O número da conta é único por construção (índice único + retry na criação), então o label
+/// identifica a contraparte sem ambiguidade — o antigo fragmento de CPF (NNN-NN) podia se repetir
+/// entre contas diferentes (ex.: 233.333.333-33 e 333.333.333-33 → ambos "333-33").
+/// Contraparte é sempre outra conta do sistema (resolvida por CPF ou número da conta) ou a própria
+/// conta (auto-depósito "AUTO-DEPOSITO" ou auto-saque "AUTO-SAQUE" — o próprio titular).
 /// </summary>
 public static class CounterpartyLabel
 {
     private const string Suffix = "CC";
 
     public static string For(Account account) =>
-        $"{NormalizeName(account.Name)} {MaskCpf(account.Cpf)} {Suffix}";
+        $"{NormalizeName(account.Name)} {account.AccountNumber} {Suffix}";
 
     public static string AutoDeposit(Account account) =>
-        $"AUTO-DEPOSITO {MaskCpf(account.Cpf)} {Suffix}";
+        $"AUTO-DEPOSITO {account.AccountNumber} {Suffix}";
 
     public static string AutoWithdrawal(Account account) =>
-        $"AUTO-SAQUE {MaskCpf(account.Cpf)} {Suffix}";
-
-    /// <summary>Máscara do CPF: últimos 5 dígitos no formato NNN-NN (ex.: "123.456.789-09" → "789-09").</summary>
-    public static string MaskCpf(string cpf)
-    {
-        var digits = new string(cpf.Where(char.IsAsciiDigit).ToArray());
-        return digits.Length >= 5
-            ? $"{digits[^5..^2]}-{digits[^2..]}"
-            : digits;
-    }
+        $"AUTO-SAQUE {account.AccountNumber} {Suffix}";
 
     private static string NormalizeName(string name)
     {

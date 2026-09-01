@@ -858,3 +858,25 @@
   `docs/adr/0007-deposito-com-contraparte-vira-transferencia.md`, `README.md`, `docs/AGENT_LOG.md`
 - Testes: backend `dotnet test` 130/130 com gate (total 94,34% ≥ 80%)
 - ADR relacionado: 0007
+
+## 2026-09-01 — Deep Copilot (hotfix: label de contraparte usa o número da conta)
+- Ação: bug de ambiguidade reportado pelo usuário — a contraparte exibia o CPF mascarado
+  (`NNN-NN`, últimos 5 dígitos) e dois CPFs diferentes podiam gerar a MESMA máscara
+  (ex.: `233.333.333-33` da Tabatha e `333.333.333-33` do Carlos → ambos `333-33`), fazendo o
+  extrato parecer ter "número repetido". Os números de conta reais eram únicos (índice único
+  `IX_Accounts_AccountNumber` ativo no volume vivo; conferido via SQLite no container).
+- Fix: `CounterpartyLabel` passou a usar `account.AccountNumber` (`00XXX-XX`, único por
+  construção) em `For`/`AutoDeposit`/`AutoWithdrawal`; `MaskCpf` foi removido.
+- Testes: `CounterpartyLabelTests` reescrito (label por número, AUTO-DEPOSITO/AUTO-SAQUE);
+  unitários e de integração passam a assertar o número da conta (DB query nos de integração);
+  E2E usa regex `/Para BRUNO TESTE \d{5}-\d{2} CC/` (número do seed é aleatório por volume).
+- Docs: ADR 0007 (seção de atualização), ADR 0002 (status), README (formato do label).
+- Arquivos alterados: `backend/Domain/Entities/CounterpartyLabel.cs`,
+  `backend/Api.Tests/Domain/CounterpartyLabelTests.cs`,
+  `backend/Api.Tests/Application/MovementServiceTests.cs`,
+  `backend/Api.Tests/Integration/MovementEndpointTests.cs`, `frontend/e2e/login.spec.ts`,
+  `frontend/src/components/MovementModal.test.tsx`, `README.md`, `docs/adr/0002-*.md`,
+  `docs/adr/0007-*.md`, `docs/AGENT_LOG.md`
+- Observação: labels de movimentações existentes ficam congelados no histórico (decisão da
+  ADR 0002) — só movimentações novas ganham o formato com número de conta.
+- ADR relacionado: 0007

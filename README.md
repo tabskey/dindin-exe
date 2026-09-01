@@ -159,10 +159,11 @@ Content-Type: application/json
 
 **Contraparte** (quem é a outra parte da movimentação):
 
-- Depósito **sem** contraparte → auto-depósito (`AUTO-DEPOSITO 111-11 CC`): crédito na própria conta.
-- Saque → auto-saque (`AUTO-SAQUE 111-11 CC`): débito na própria conta; contraparte não é aceita em saque.
+- Depósito **sem** contraparte → auto-depósito (`AUTO-DEPOSITO 00319-78 CC`): crédito na própria conta.
+- Saque → auto-saque (`AUTO-SAQUE 00319-78 CC`): débito na própria conta; contraparte não é aceita em saque.
 - Depósito **com** `counterpartyCpf` ou `counterpartyAccountNumber` → **transferência**: débito na sua conta e crédito na conta do destinatário; os dois extratos registram (o seu como saída "para {destinatário}", o dele como entrada "de {você}"). `counterpartyAccountNumber` tem precedência sobre o CPF.
 - Destinatário inexistente, transferência para si mesmo ou saldo insuficiente → erro `400`.
+- O label da contraparte usa o **número da conta** (`00XXX-XX`, ex.: `BRUNO TESTE 00614-98 CC`) — único por construção; o antigo fragmento de CPF (`NNN-NN`) podia se repetir entre contas.
 
 A regra principal é simples:
 

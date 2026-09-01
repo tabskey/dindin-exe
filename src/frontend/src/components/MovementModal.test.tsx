@@ -43,11 +43,11 @@ describe('MovementModal', () => {
 
     await user.type(screen.getByPlaceholderText('0,00'), '5050') // R$ 50,50 (5.050 centavos)
     await user.type(screen.getByPlaceholderText('000.000.000-00'), '11122233344')
-    mockCreateMovement.mockResolvedValue({ ...movement, counterparty: 'JOAO TESTE 222-22 CC' })
+    mockCreateMovement.mockResolvedValue({ ...movement, counterparty: 'JOAO TESTE 00315-41 CC' })
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
     expect(await screen.findByText('Transferência realizada')).toBeInTheDocument()
-    expect(screen.getByText(/Para JOAO TESTE 222-22 CC/)).toBeInTheDocument()
+    expect(screen.getByText(/Para JOAO TESTE 00315-41 CC/)).toBeInTheDocument()
     expect(screen.getByText(/R\$\s*50,50/)).toBeInTheDocument()
     expect(screen.getByText(/R\$\s*1\.100,00/)).toBeInTheDocument()
 
@@ -66,7 +66,7 @@ describe('MovementModal', () => {
     await user.click(screen.getByRole('button', { name: 'Número da conta' }))
     await user.type(screen.getByPlaceholderText('Número (00000)'), '00315')
     await user.type(screen.getByPlaceholderText('Dígito (00)'), '41')
-    mockCreateMovement.mockResolvedValue({ ...movement, counterparty: 'MARIA TESTE 333-33 CC' })
+    mockCreateMovement.mockResolvedValue({ ...movement, counterparty: 'MARIA TESTE 00316-42 CC' })
     await user.click(screen.getByRole('button', { name: 'Depositar' }))
 
     expect(await screen.findByText('Transferência realizada')).toBeInTheDocument()

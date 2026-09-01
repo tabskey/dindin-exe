@@ -29,7 +29,16 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
         Assert.Equal(MovementType.Debit, movement!.Type);
-        Assert.Equal($"MARIA TESTE {ApiFactory.MaskCpf(targetCpf)} CC", movement.Counterparty);
+        string targetAccountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            targetAccountNumber = await db.Accounts
+                .Where(a => a.Cpf == targetCpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"MARIA TESTE {targetAccountNumber} CC", movement.Counterparty);
 
         var balance = await _factory.GetAsync($"/accounts/{id}/balance", token);
         Assert.Equal(60m, (await balance.Content.ReadFromJsonAsync<BalanceDto>())!.Balance);
@@ -48,7 +57,16 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal($"AUTO-DEPOSITO {ApiFactory.MaskCpf(cpf)} CC", movement!.Counterparty);
+        string accountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountNumber = await db.Accounts
+                .Where(a => a.Cpf == cpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"AUTO-DEPOSITO {accountNumber} CC", movement!.Counterparty);
     }
 
     [Fact]
@@ -62,7 +80,16 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal($"AUTO-SAQUE {ApiFactory.MaskCpf(cpf)} CC", movement!.Counterparty);
+        string accountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountNumber = await db.Accounts
+                .Where(a => a.Cpf == cpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"AUTO-SAQUE {accountNumber} CC", movement!.Counterparty);
     }
 
     [Fact]
@@ -100,7 +127,7 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
         Assert.Equal(MovementType.Debit, movement!.Type);
-        Assert.Equal($"MARIA TESTE {ApiFactory.MaskCpf(targetCpf)} CC", movement.Counterparty);
+        Assert.Equal($"MARIA TESTE {targetAccountNumber} CC", movement.Counterparty);
 
         var targetBalance = await _factory.GetAsync($"/accounts/{targetId}/balance", targetToken);
         Assert.Equal(40m, (await targetBalance.Content.ReadFromJsonAsync<BalanceDto>())!.Balance);

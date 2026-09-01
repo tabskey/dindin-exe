@@ -31,7 +31,15 @@ usuário reportou como erro.
   4. resposta = o movimento de débito do remetente (contraparte = destinatário).
 - Saque com contraparte → `InvalidRequest` (400) — contraparte só existe em depósito.
 - Transferir para si mesmo → `InvalidRequest` (400) — usar depósito sem contraparte.
-- Labels: débito `{DESTINATARIO NNN-NN CC}`, crédito `{REMETENTE NNN-NN CC}`.
+- Labels: débito `{DESTINATARIO 00XXX-XX CC}`, crédito `{REMETENTE 00XXX-XX CC}`.
+
+### Atualização: label usa o número da conta (supera a ADR 0002 neste ponto)
+
+O label de contraparte passou a exibir o **número da conta** (`00XXX-XX`) em vez do fragmento de
+CPF mascarado (`NNN-NN`): o número é único por construção (índice único + retry), enquanto a
+máscara de 5 dígitos podia se repetir entre contas (ex.: `233.333.333-33` e `333.333.333-33`
+ambos viravam `333-33`), fazendo o extrato parecer ter um "número repetido". `CounterpartyLabel`
+agora usa `account.AccountNumber`; `MaskCpf` foi removido.
 
 ## Consequências
 
@@ -46,4 +54,5 @@ usuário reportou como erro.
   `Debit_WithCounterparty_ReturnsBadRequest`) e E2E (`transferência: o valor sai do remetente
   e cai no destinatário`).
 - ADR 0002/0003 ficam parcialmente superadas: a resolução da contraparte continua válida; a
-  semântica "label informativo" dá lugar à transferência quando há contraparte no depósito.
+  semântica "label informativo" dá lugar à transferência quando há contraparte no depósito; o
+  formato do label agora usa o número da conta (único), não o CPF mascarado.

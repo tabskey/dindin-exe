@@ -102,7 +102,7 @@ test('transferência: o valor sai do remetente e cai no destinatário', async ({
   await dialog.getByRole('button', { name: 'Depositar' }).click()
 
   await expect(dialog.getByText('Transferência realizada')).toBeVisible()
-  await expect(dialog.getByText(/Para BRUNO TESTE 222-22 CC/)).toBeVisible()
+  await expect(dialog.getByText(/Para BRUNO TESTE \d{5}-\d{2} CC/)).toBeVisible()
   await dialog.getByRole('button', { name: 'Concluir' }).click()
   await expect(dialog).not.toBeVisible()
 
