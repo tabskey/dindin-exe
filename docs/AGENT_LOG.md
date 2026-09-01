@@ -784,3 +784,18 @@
 - Testes: backend `dotnet test` 121/121 verdes com gate de cobertura (total 94,74% ≥ 80%);
   frontend Vitest 81/81, `eslint` e `tsc -b`/build limpos
 - ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: validação E2E no Docker após o commit)
+- Ação: stack reconstruído (`docker compose up -d --build`, 19s com cache) e E2E Playwright
+  rodado contra o código novo:
+  - a migração `20260901151000_AddAccountNumberUniqueIndex` foi aplicada **no volume existente**
+    sem erro (o app subiu e passou a escutar em :8080) — o índice único não quebrou dados antigos;
+  - login via proxy `http://localhost/api/auth/login` → 200 com JWT (nginx com os security
+    headers novos válido, seed intacto);
+  - `npm run test:e2e` → **5/5 verdes** (9,8s): smoke, login → extrato, depósito +50, saque −20
+    e criar conta → CPF preenchido (fluxo que exercita a validação de 11 dígitos do CPF); o
+    rate limit de 30/min não interferiu (5-6 logins por execução).
+- Motivo: usuário confirmou que o Docker estava no ar — faltava validar os lotes 1-3 no ambiente real
+- Arquivos alterados: nenhum (validação); `docs/AGENT_LOG.md`
+- Testes: E2E 5/5 verdes contra os containers novos
+- ADR relacionado: 0005 (setup do E2E)
