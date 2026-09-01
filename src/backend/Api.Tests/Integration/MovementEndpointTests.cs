@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Application.Dtos;
+using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,17 +16,35 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
     public MovementEndpointTests(ApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Credit_WithCounterpartyCpf_UsesSeedAccountLabel()
+    public async Task Transfer_WithCounterpartyCpf_MovesMoneyBetweenAccounts()
     {
         var (id, _, token) = await _factory.RegisterAsync("Titular");
+        var (targetId, targetCpf, targetToken) = await _factory.RegisterAsync("Maria Teste");
 
-        // Bruno do seed: 222.222.222-22.
+        await _factory.PostAsync($"/accounts/{id}/movements", new { type = 0, amount = 100 }, token, "fund-1");
+
         var response = await _factory.PostAsync($"/accounts/{id}/movements",
-            new { type = 0, amount = 50, counterpartyCpf = "222.222.222-22" }, token, "cp-bruno");
+            new { type = 0, amount = 40, counterpartyCpf = targetCpf }, token, "tf-cpf");
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal("BRUNO TESTE 222-22 CC", movement!.Counterparty);
+        Assert.Equal(MovementType.Debit, movement!.Type);
+        string targetAccountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            targetAccountNumber = await db.Accounts
+                .Where(a => a.Cpf == targetCpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"MARIA TESTE {targetAccountNumber} CC", movement.Counterparty);
+
+        var balance = await _factory.GetAsync($"/accounts/{id}/balance", token);
+        Assert.Equal(60m, (await balance.Content.ReadFromJsonAsync<BalanceDto>())!.Balance);
+
+        var targetBalance = await _factory.GetAsync($"/accounts/{targetId}/balance", targetToken);
+        Assert.Equal(40m, (await targetBalance.Content.ReadFromJsonAsync<BalanceDto>())!.Balance);
     }
 
     [Fact]
@@ -38,7 +57,16 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal($"AUTO-DEPOSITO {ApiFactory.MaskCpf(cpf)} CC", movement!.Counterparty);
+        string accountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountNumber = await db.Accounts
+                .Where(a => a.Cpf == cpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"AUTO-DEPOSITO {accountNumber} CC", movement!.Counterparty);
     }
 
     [Fact]
@@ -52,7 +80,16 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal($"AUTO-SAQUE {ApiFactory.MaskCpf(cpf)} CC", movement!.Counterparty);
+        string accountNumber;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            accountNumber = await db.Accounts
+                .Where(a => a.Cpf == cpf)
+                .Select(a => a.AccountNumber)
+                .SingleAsync();
+        }
+        Assert.Equal($"AUTO-SAQUE {accountNumber} CC", movement!.Counterparty);
     }
 
     [Fact]
@@ -67,27 +104,45 @@ public partial class MovementEndpointTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Credit_WithCounterpartyAccountNumber_UsesRegisteredAccountLabel()
+    public async Task Transfer_WithCounterpartyAccountNumber_MovesMoneyBetweenAccounts()
     {
         var (id, _, token) = await _factory.RegisterAsync("Titular");
-        var (_, counterpartyCpf, _) = await _factory.RegisterAsync("João Teste");
+        var (targetId, targetCpf, targetToken) = await _factory.RegisterAsync("Maria Teste");
 
-        string counterpartyAccountNumber;
+        await _factory.PostAsync($"/accounts/{id}/movements", new { type = 0, amount = 100 }, token, "fund-2");
+
+        string targetAccountNumber;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            counterpartyAccountNumber = await db.Accounts
-                .Where(a => a.Cpf == counterpartyCpf)
+            targetAccountNumber = await db.Accounts
+                .Where(a => a.Cpf == targetCpf)
                 .Select(a => a.AccountNumber)
                 .SingleAsync();
         }
 
         var response = await _factory.PostAsync($"/accounts/{id}/movements",
-            new { type = 0, amount = 50, counterpartyAccountNumber }, token, "cp-num-joao");
+            new { type = 0, amount = 40, counterpartyAccountNumber = targetAccountNumber }, token, "tf-num");
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var movement = await response.Content.ReadFromJsonAsync<MovementDto>();
-        Assert.Equal($"JOAO TESTE {ApiFactory.MaskCpf(counterpartyCpf)} CC", movement!.Counterparty);
+        Assert.Equal(MovementType.Debit, movement!.Type);
+        Assert.Equal($"MARIA TESTE {targetAccountNumber} CC", movement.Counterparty);
+
+        var targetBalance = await _factory.GetAsync($"/accounts/{targetId}/balance", targetToken);
+        Assert.Equal(40m, (await targetBalance.Content.ReadFromJsonAsync<BalanceDto>())!.Balance);
+    }
+
+    [Fact]
+    public async Task Debit_WithCounterparty_ReturnsBadRequest()
+    {
+        var (id, _, token) = await _factory.RegisterAsync("Titular");
+        await _factory.PostAsync($"/accounts/{id}/movements", new { type = 0, amount = 100 }, token, "fund-3");
+
+        var response = await _factory.PostAsync($"/accounts/{id}/movements",
+            new { type = 1, amount = 10, counterpartyCpf = "222.222.222-22" }, token, "debit-cp");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

@@ -133,12 +133,30 @@ O token deve ser enviado como `Authorization: Bearer <jwt>` nas rotas protegidas
 | Método | Rota                       | Auth | Observação                                                                   |
 | ------ | -------------------------- | ---- | ---------------------------------------------------------------------------- |
 | `POST` | `/auth/login`              | —    | Autentica por CPF + senha e devolve JWT                                      |
-| `POST` | `/accounts`                | —    | Cria uma conta (`Idempotency-Key` opcional)                                  |
-| `POST` | `/accounts/{id}/movements` | ✔    | Registra entrada/saída (`Idempotency-Key` obrigatório, `counterpartyCpf`/`counterpartyAccountNumber` opcionais) |
+| `POST` | `/accounts`                | —    | Cria uma conta — Corrente/Poupança via `accountType` (0/1) (`Idempotency-Key` opcional) |
+| `POST` | `/accounts/{id}/movements` | ✔    | Entrada/saída na própria conta; depósito com contraparte vira **transferência** (`Idempotency-Key` obrigatório) |
 | `GET`  | `/accounts/{id}/balance`   | ✔    | Consulta o saldo disponível                                                  |
 | `GET`  | `/accounts/{id}/movements` | ✔    | Consulta o histórico de movimentações paginado                               |
 | `POST` | `/accounts/{id}/avatar`    | ✔    | Envia avatar (multipart, JPEG/PNG/WebP até 512 KB)                           |
 | `GET`  | `/accounts/{id}/avatar`    | ✔    | Baixa o avatar da conta                                                      |
+
+### Exemplo de criação de conta
+
+```http
+POST /accounts
+Idempotency-Key: 7f2a2e3e-...
+Content-Type: application/json
+
+{
+  "name": "Ana Teste",
+  "cpf": "444.555.666-77",
+  "password": "senha123",
+  "accountType": 1
+}
+```
+
+`accountType` é numérico: `0` = Conta Corrente (padrão), `1` = Conta Poupança. O tipo aparece no
+login e no cabeçalho do extrato ("Conta 00XXX-XX · Conta Corrente/Poupança").
 
 ### Exemplo de movimentação
 
@@ -155,19 +173,19 @@ Content-Type: application/json
 }
 ```
 
-`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito (entrada), `1` = débito (saída). A chave de idempotência garante que repetir a requisição não duplica a movimentação.
+`amount` é o valor em **centavos inteiros** (ex.: R$ 150,00 → `15000`). `type` é numérico: `0` = crédito, `1` = débito. A chave de idempotência garante que repetir a requisição não duplica a movimentação.
 
-**Contraparte** (quem foi a outra parte da movimentação, exibida no extrato):
+**Contraparte** (quem é a outra parte da movimentação):
 
-- Sem contraparte no **depósito** → `AUTO-DEPOSITO 111-11 CC` (o próprio titular).
-- Sem contraparte no **saque** → `AUTO-SAQUE 111-11 CC` (o próprio titular).
-- Com `counterpartyCpf` → resolve a conta pelo CPF e grava o label (ex.: `BRUNO TESTE 222-22 CC`).
-- Com `counterpartyAccountNumber` → resolve a conta pelo número (ex.: `00315-41`); tem precedência sobre o CPF.
-- CPF ou conta inexistente → erro `400`.
+- Depósito **sem** contraparte → auto-depósito (`AUTO-DEPOSITO 00319-78 CC`): crédito na própria conta.
+- Saque → auto-saque (`AUTO-SAQUE 00319-78 CC`): débito na própria conta; contraparte não é aceita em saque.
+- Depósito **com** `counterpartyCpf` ou `counterpartyAccountNumber` → **transferência**: débito na sua conta e crédito na conta do destinatário; os dois extratos registram (o seu como saída "para {destinatário}", o dele como entrada "de {você}"). `counterpartyAccountNumber` tem precedência sobre o CPF.
+- Destinatário inexistente, transferência para si mesmo ou saldo insuficiente → erro `400`.
+- O label da contraparte usa o **número da conta** (`00XXX-XX`, ex.: `BRUNO TESTE 00614-98 CC`) — único por construção; o antigo fragmento de CPF (`NNN-NN`) podia se repetir entre contas.
 
 A regra principal é simples:
 
-**Crédito entra. Débito sai. Saldo negativo não passa.**
+**Crédito entra. Débito sai. Depósito com contraparte move o dinheiro. Saldo negativo não passa.**
 
 ---
 
@@ -217,7 +235,7 @@ flowchart TB
 
             Idempotency["<b>IdempotencyRecord</b><br/><br/>Chave + resposta cacheada"]
 
-            SQLite["<b>SQLite</b><br/><br/>Account (avatar BLOB), Movement,<br/>AuditLog, IdempotencyRecord"]
+            SQLite["<b>SQLite</b><br/><br/>Account (avatar BLOB, tipo<br/>Corrente/Poupança), Movement,<br/>AuditLog, IdempotencyRecord"]
 
             Endpoints --> Application
             Application --> Domain
@@ -302,7 +320,8 @@ gerenciador de estado global além do React — arquitetura enxuta, por camadas 
   para pt-BR e `Idempotency-Key` por tentativa nas movimentações) e `lib/masks.ts` (CPF, conta,
   moeda).
 - **Componentes** — `Modal` base acessível (overlay, Esc, foco, trava de scroll) especializado em
-  `MovementModal`, `AvatarModal` e `CreateAccountModal`; `ThemeToggle` para tema claro/escuro.
+  `MovementModal`, `AvatarModal` e `CreateAccountModal` (com seletor de tipo corrente/poupança);
+  `ThemeToggle` para tema claro/escuro; o cabeçalho do extrato mostra número e tipo da conta.
 - **Tema** — o hook `useTheme` alterna a classe `.dark` no `<html>` e persiste no `localStorage`;
   a paleta vive em tokens CSS (`:root`/`.dark` no `index.css`) mapeados via `@theme` do Tailwind
   (mudar cor = editar só os tokens). Um script inline no `index.html` evita flash do tema errado.
@@ -318,7 +337,7 @@ A documentação detalhada e o diagrama estão em [`docs/ARCHITECTURE.md`](./doc
 
 ## 🧪 Testes
 
-**125 testes, todos verdes** (`dotnet test`):
+**128 testes, todos verdes** (`dotnet test`):
 
 ### Testes unitários
 
@@ -328,19 +347,20 @@ Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, 
 
 `WebApplicationFactory` + SQLite (arquivo temporário) exercitando a API real: fluxo completo (criar conta → login → movimentação → saldo → histórico), contraparte, idempotência (replay não duplica; corpo divergente → 409), paginação, 401/403/404, avatar e débitos concorrentes nunca negativos.
 
-Cobertura total de linhas: **94,8%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
+Cobertura total de linhas: **94,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
 ### Testes do frontend
 
-**86 testes, todos verdes** — cobertura de linhas **96,9%** (meta ≥ 80%; 0 bugs, 0 code smells,
-0 vulnerabilidades): 81 de componentes/regras (Vitest + Testing Library) e 5 E2E (Playwright,
+**88 testes, todos verdes** — cobertura de linhas **96,9%** (meta ≥ 80%; 0 bugs, 0 code smells,
+0 vulnerabilidades): 82 de componentes/regras (Vitest + Testing Library) e 6 E2E (Playwright,
 fluxos completos no navegador). A suíte Vitest roda em ~30s e o E2E em ~7s (máquina local, Windows).
 
 - **Vitest + Testing Library** (`npm test`): máscaras, client de API (fetch mockado), login,
   criação de conta, extrato, movimentação, avatar, modal e tema; `npm run coverage` gera o `lcov`
   que alimenta o SonarQube.
-- **Playwright** (`npm run test:e2e`): login → extrato → depósito → saque e criar conta → login
-  preenchido; requer o app + API no ar (`docker compose up -d --build`) com o seed carregado.
+- **Playwright** (`npm run test:e2e`): login → extrato → depósito → saque → transferência e criar
+  conta → login preenchido; requer o app + API no ar (`docker compose up -d --build`) com o seed
+  carregado.
 - **SonarQube local** (`docker-compose.sonarqube.yml`, http://localhost:9000): análise via scanner
   em container; cobertura de linhas **96,9%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
 

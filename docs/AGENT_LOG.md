@@ -826,3 +826,82 @@
   `backend/Api.Tests/Application/AccountServiceTests.cs`, `README.md`, `docs/AGENT_LOG.md`
 - Testes: backend `dotnet test` 125/125 com gate (total 94,83% ≥ 80%), `dotnet format` limpo
 - ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: depósito com contraparte vira transferência)
+- Ação: correção de bug reportado pelo usuário — "depositar pra alguém" creditava o próprio
+  depositante (a contraparte era só um label de exibição, ADR 0002), não o destinatário. Decisão
+  confirmada com o usuário: **transferência** (débito no remetente + crédito no destinatário).
+- Backend:
+  - `MovementService.CreateAsync` reescrito: depósito sem contraparte = auto-depósito (inalterado);
+    depósito com `counterpartyCpf`/`counterpartyAccountNumber` = transferência (2 movimentos, uma
+    transação via UnitOfWork do filtro; resposta = débito do remetente);
+  - `PersistWithRetryAsync` recarrega e reaplica os strategies de TODAS as contas mutadas em
+    conflito de concorrência otimista (antes só a conta do titular);
+  - novas validações: contraparte só em depósito (saque com contraparte → 400) e transferência
+    para si mesmo → 400;
+  - destinatário resolvido via `GetByCpf/GetByAccountNumber` (AsNoTracking) e recarregado
+    rastreado por `Id` para ter o saldo persistido atomicamente.
+- Frontend: `MovementModal` mostra "Transferência realizada" + "Para {destinatário}" quando há
+  contraparte (o saldo exibido na confirmação é o novo saldo do remetente, já debitado).
+- Testes: unitários novos (transferência por CPF/número, saldo insuficiente, para si mesmo, débito
+  com contraparte, retry de concorrência em duas contas); integração reescrita
+  (`Transfer_WithCounterpartyCpf_MovesMoneyBetweenAccounts`,
+  `Transfer_WithCounterpartyAccountNumber_MovesMoneyBetweenAccounts`,
+  `Debit_WithCounterparty_ReturnsBadRequest`); E2E novo (`transferência: o valor sai do remetente
+  e cai no destinatário`, com baseline do destinatário).
+- Docs: novo ADR 0007; README (endpoints + seção de movimentação) atualizados.
+- Arquivos alterados: `backend/Application/Services/MovementService.cs`,
+  `backend/Api.Tests/Application/MovementServiceTests.cs`,
+  `backend/Api.Tests/Integration/MovementEndpointTests.cs`,
+  `backend/Api.Tests/Integration/IdempotencyTests.cs`,
+  `frontend/src/components/MovementModal.tsx`, `frontend/e2e/login.spec.ts`, criado
+  `docs/adr/0007-deposito-com-contraparte-vira-transferencia.md`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: backend `dotnet test` 130/130 com gate (total 94,34% ≥ 80%)
+- ADR relacionado: 0007
+
+## 2026-09-01 — Deep Copilot (hotfix: label de contraparte usa o número da conta)
+- Ação: bug de ambiguidade reportado pelo usuário — a contraparte exibia o CPF mascarado
+  (`NNN-NN`, últimos 5 dígitos) e dois CPFs diferentes podiam gerar a MESMA máscara
+  (ex.: `233.333.333-33` da Tabatha e `333.333.333-33` do Carlos → ambos `333-33`), fazendo o
+  extrato parecer ter "número repetido". Os números de conta reais eram únicos (índice único
+  `IX_Accounts_AccountNumber` ativo no volume vivo; conferido via SQLite no container).
+- Fix: `CounterpartyLabel` passou a usar `account.AccountNumber` (`00XXX-XX`, único por
+  construção) em `For`/`AutoDeposit`/`AutoWithdrawal`; `MaskCpf` foi removido.
+- Testes: `CounterpartyLabelTests` reescrito (label por número, AUTO-DEPOSITO/AUTO-SAQUE);
+  unitários e de integração passam a assertar o número da conta (DB query nos de integração);
+  E2E usa regex `/Para BRUNO TESTE \d{5}-\d{2} CC/` (número do seed é aleatório por volume).
+- Docs: ADR 0007 (seção de atualização), ADR 0002 (status), README (formato do label).
+- Arquivos alterados: `backend/Domain/Entities/CounterpartyLabel.cs`,
+  `backend/Api.Tests/Domain/CounterpartyLabelTests.cs`,
+  `backend/Api.Tests/Application/MovementServiceTests.cs`,
+  `backend/Api.Tests/Integration/MovementEndpointTests.cs`, `frontend/e2e/login.spec.ts`,
+  `frontend/src/components/MovementModal.test.tsx`, `README.md`, `docs/adr/0002-*.md`,
+  `docs/adr/0007-*.md`, `docs/AGENT_LOG.md`
+- Observação: labels de movimentações existentes ficam congelados no histórico (decisão da
+  ADR 0002) — só movimentações novas ganham o formato com número de conta.
+- ADR relacionado: 0007
+
+## 2026-09-01 — Deep Copilot (feat: número da conta e tipo no cabeçalho do extrato)
+- Ação: pedido do usuário — exibir, logo abaixo do "Olá, {nome}" do extrato, um campo pequeno
+  com o número da conta e o tipo (dados já presentes no `AccountDto` do login).
+- Frontend: `ExtratoPage` ganhou `accountTypeLabel` (0 = Conta Corrente, 1 = Conta Poupança) e
+  a linha `Conta {accountNumber} · {tipo}` sob o `h1` da saudação.
+- Testes: asserção nova em `ExtratoPage.test.tsx` (`Conta 00315-41 · Conta Corrente`).
+- Arquivos alterados: `frontend/src/pages/ExtratoPage.tsx`,
+  `frontend/src/pages/ExtratoPage.test.tsx`, `docs/AGENT_LOG.md`
+- Testes: frontend 81/81 (vitest), lint e build limpos; E2E 6/6 no Docker
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (docs: README, ARCHITECTURE e APRESENTACAO atualizados)
+- Ação: pedido do usuário — refletir nos documentos as mudanças do hotfix (label com número da
+  conta, cabeçalho com número/tipo, seletor de tipo no cadastro).
+- README: exemplo de criação de conta com `accountType` (0 Corrente / 1 Poupança), linha do
+  endpoint `/accounts`, seção de frontend (seletor + cabeçalho), contagens de testes
+  (backend 128, frontend 88 = 82 Vitest + 6 E2E) e cobertura (94,3%).
+- ARCHITECTURE: modelo de domínio (AccountType escolhido no cadastro; label da contraparte com
+  número da conta), seção Contraparte (CounterpartyAccountNumber + precedência) e endpoints.
+- APRESENTACAO: linhas novas de decisão (tipo no cadastro, cabeçalho, label único), números de
+  qualidade e referências (ADR 0001 a 0007). Primeiro commit do arquivo (estava untracked).
+- Arquivos alterados: `README.md`, `docs/ARCHITECTURE.md`, `docs/APRESENTACAO.md`,
+  `docs/AGENT_LOG.md`
+- ADR relacionado: 0007

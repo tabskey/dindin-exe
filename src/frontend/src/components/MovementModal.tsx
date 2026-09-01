@@ -20,6 +20,8 @@ type CounterpartyMode = 'cpf' | 'account'
 interface SuccessInfo {
   amount: number
   balance: number
+  transferred: boolean
+  recipient: string | null
 }
 
 export function MovementModal({ open, accountId, onClose, onSuccess }: MovementModalProps) {
@@ -93,7 +95,8 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
     try {
       const key = idempotencyKeyRef.current ?? crypto.randomUUID()
       idempotencyKeyRef.current = key
-      await createMovement(
+      const transferred = counterpartyCpf !== undefined || counterpartyAccountNumber !== undefined
+      const movement = await createMovement(
         accountId,
         {
           type,
@@ -108,7 +111,12 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
       // falhar, o retry reusa a mesma chave e não duplica a movimentação.
       const balanceData = await getBalance(accountId)
       idempotencyKeyRef.current = null
-      setSuccess({ amount: amountValue, balance: balanceData.balance })
+      setSuccess({
+        amount: amountValue,
+        balance: balanceData.balance,
+        transferred,
+        recipient: transferred ? movement.counterparty : null,
+      })
       onSuccess()
     } catch (err) {
       // Erro mantém a chave atual: retry da mesma tentativa não duplica.
@@ -128,8 +136,11 @@ export function MovementModal({ open, accountId, onClose, onSuccess }: MovementM
     <Modal open={open} onClose={handleClose} title={type === 0 ? 'Depósito' : 'Saque'}>
       {success ? (
         <div className="text-center">
-          <p className="text-sm text-muted">{type === 0 ? 'Depósito realizado' : 'Saque realizado'}</p>
+          <p className="text-sm text-muted">
+            {success.transferred ? 'Transferência realizada' : type === 0 ? 'Depósito realizado' : 'Saque realizado'}
+          </p>
           <p className="mt-1 text-3xl font-bold tabular-nums">{brl.format(success.amount / 100)}</p>
+          {success.transferred && success.recipient && <p className="mt-1 text-sm text-muted">Para {success.recipient}</p>}
           <div className="mt-6 rounded-xl border border-border bg-balance-bg p-4">
             <p className="text-sm text-muted">Saldo atual</p>
             <p className="mt-1 text-2xl font-bold tabular-nums">{brl.format(success.balance / 100)}</p>

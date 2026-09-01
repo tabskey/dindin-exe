@@ -65,7 +65,7 @@ flowchart TB
 
             Idempotency["<b>IdempotencyRecord</b><br/><br/>Chave + resposta cacheada"]
 
-            SQLite["<b>SQLite</b><br/><br/>Account (avatar BLOB), Movement,<br/>AuditLog, IdempotencyRecord"]
+            SQLite["<b>SQLite</b><br/><br/>Account (avatar BLOB, tipo<br/>Corrente/Poupança), Movement,<br/>AuditLog, IdempotencyRecord"]
 
             Endpoints --> Application
             Application --> Domain
@@ -145,11 +145,11 @@ flowchart TB
 ## 4. Modelo de domínio
 
 **Account** — `Id`, `AccountNumber` (gerado automaticamente), `Name`, `CPF` (único), `AccountType`
-(Corrente/Poupança, apenas cosmético — sem regra de negócio diferente entre os tipos), `PasswordHash`,
-`Balance`, `CreatedAt`.
+(Corrente/Poupança, escolhido no cadastro — apenas cosmético, sem regra de negócio diferente entre os
+tipos), `PasswordHash`, `Balance`, `CreatedAt`.
 
 **Movement** — `Id`, `AccountId`, `Type` (Credit/Debit), `Amount`, `Timestamp`, `Counterparty`
-(label da contraparte, ex.: `JOAO789-09 CC`), resultado aplicado via strategy.
+(label da contraparte, ex.: `BRUNO TESTE 00614-98 CC`), resultado aplicado via strategy.
 
 **AuditLog** — `Id`, `EntityType`, `EntityId`, `Action`, `Payload` (JSON), `Timestamp`.
 
@@ -174,13 +174,15 @@ mesma proteção.
 
 ### Contraparte
 
-- `POST /accounts/{id}/movements` aceita `CounterpartyCpf` (opcional): ausente → auto-depósito
-  (`AUTO-DEPOSITO {NNN-NN} CC`, com o próprio CPF da conta); informado → resolve a conta por CPF
-  (único no schema); não encontrada → erro `CounterpartyNotFound` (400).
-- Label congelado na criação: `{NOME EM MAIÚSCULAS, SEM ACENTO} {CPF mascarado NNN-NN} CC`
-  (ex.: `JOAO789-09 CC`), com sufixo sempre `CC` — no exercício todas as contas são correntes.
+- `POST /accounts/{id}/movements` aceita `CounterpartyCpf` ou `CounterpartyAccountNumber`
+  (opcional, o número tem precedência): ausente → auto-depósito (`AUTO-DEPOSITO {00XXX-XX} CC`, com o
+  próprio número da conta); informado → resolve a conta por CPF ou número (únicos no schema);
+  não encontrada → erro `CounterpartyNotFound` (400).
+- Label congelado na criação: `{NOME EM MAIÚSCULAS, SEM ACENTO} {número da conta 00XXX-XX} CC`
+  (ex.: `BRUNO TESTE 00614-98 CC`) — o número é único por construção (índice único + retry), ao
+  contrário da antiga máscara de CPF (`NNN-NN`) que podia se repetir entre contas (ver ADR 0007).
 - Contraparte é sempre a própria conta (depósito na boca do caixa) ou outra conta do sistema —
-  ver ADR 0002.
+  ver ADR 0002/0007.
 
 ## 6. Autenticação
 
@@ -196,9 +198,9 @@ Autenticação simples por CPF + senha — a própria `Account` é a identidade,
 
 | Método | Rota | Observação |
 |---|---|---|
-| `POST` | `/accounts` | Cria conta (Idempotency-Key opcional) |
+| `POST` | `/accounts` | Cria conta com tipo Corrente/Poupança (`accountType`: 0/1; Idempotency-Key opcional) |
 | `POST` | `/auth/login` | Autentica por CPF + senha, devolve JWT |
-| `POST` | `/accounts/{id}/movements` | Registra entrada/saída (Idempotency-Key obrigatório; `CounterpartyCpf` opcional) |
+| `POST` | `/accounts/{id}/movements` | Registra entrada/saída (Idempotency-Key obrigatório; `CounterpartyCpf`/`CounterpartyAccountNumber` opcionais) |
 | `GET` | `/accounts/{id}/balance` | Consulta saldo disponível |
 | `GET` | `/accounts/{id}/movements` | Histórico de movimentações, paginado |
 

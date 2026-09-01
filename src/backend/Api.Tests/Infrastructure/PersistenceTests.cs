@@ -51,8 +51,8 @@ public class PersistenceTests : IDisposable
         Assert.Equal(8, await db.Movements.CountAsync());
         var anaMovements = await db.Movements.AsNoTracking()
             .Where(m => m.AccountId == ana.Id).ToListAsync();
-        Assert.Contains(anaMovements, m => m.Counterparty == "AUTO-DEPOSITO 111-11 CC");
-        Assert.Contains(anaMovements, m => m.Counterparty == "CARLOS TESTE 333-33 CC");
+        Assert.Contains(anaMovements, m => m.Counterparty == $"AUTO-DEPOSITO {ana.AccountNumber} CC");
+        Assert.Contains(anaMovements, m => m.Counterparty == $"CARLOS TESTE {carlos.AccountNumber} CC");
     }
 
     [Fact]

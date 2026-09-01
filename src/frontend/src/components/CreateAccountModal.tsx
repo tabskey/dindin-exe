@@ -13,6 +13,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountMo
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
+  const [accountType, setAccountType] = useState(0)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -20,6 +21,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountMo
     setName('')
     setCpf('')
     setPassword('')
+    setAccountType(0)
     setError('')
   }
 
@@ -47,7 +49,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountMo
     const normalizedCpf = maskCpf(cpf)
     try {
       // Chave por tentativa: um replay da mesma tentativa não duplica a conta.
-      await createAccount({ name: name.trim(), cpf: normalizedCpf, password }, crypto.randomUUID())
+      await createAccount({ name: name.trim(), cpf: normalizedCpf, password, accountType }, crypto.randomUUID())
       reset()
       onClose()
       // Pré-preenche o CPF no login; a senha fica vazia para o usuário digitar.
@@ -102,6 +104,34 @@ export function CreateAccountModal({ open, onClose, onCreated }: CreateAccountMo
             className={inputClasses}
           />
         </label>
+
+        <fieldset className="block">
+          <legend className="text-sm font-medium text-foreground">Tipo de conta</legend>
+          <div className="mt-1 flex gap-3">
+            <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+              <input
+                type="radio"
+                name="accountType"
+                value={0}
+                checked={accountType === 0}
+                onChange={() => setAccountType(0)}
+                className="size-4 accent-accent"
+              />
+              <span className="text-sm text-foreground">Conta Corrente</span>
+            </label>
+            <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+              <input
+                type="radio"
+                name="accountType"
+                value={1}
+                checked={accountType === 1}
+                onChange={() => setAccountType(1)}
+                className="size-4 accent-accent"
+              />
+              <span className="text-sm text-foreground">Conta Poupança</span>
+            </label>
+          </div>
+        </fieldset>
 
         {error && <p className="text-sm text-expense">{error}</p>}
 
