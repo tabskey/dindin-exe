@@ -9,6 +9,7 @@ using Domain.Results;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -69,6 +70,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("sensitive-write", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 30;
+        limiter.QueueLimit = 0;
+    });
+});
+
 var app = builder.Build();
 
 app.UseExceptionHandler(errorApp => errorApp.Run(async ctx =>
@@ -93,6 +105,7 @@ using (var scope = app.Services.CreateScope())
     DbInitializer.Initialize(scope.ServiceProvider.GetRequiredService<AppDbContext>());
 }
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -104,6 +117,7 @@ app.MapPost("/accounts", async (CreateAccountRequest request, IAccountService ac
         ? Results.Created($"/accounts/{result.Value!.Id}", result.Value)
         : ToErrorResult(result.Error!);
 })
+.RequireRateLimiting("sensitive-write")
 .AddEndpointFilter(new IdempotencyFilter())
 .WithName("CreateAccount");
 
@@ -115,6 +129,7 @@ app.MapPost("/auth/login", async (LoginRequest request, IAccountService accounts
         ? Results.Ok(new LoginResponse(tokens.CreateToken(result.Value!), result.Value!))
         : Results.Unauthorized();
 })
+.RequireRateLimiting("sensitive-write")
 .WithName("Login");
 
 // POST /accounts/{id}/movements — idempotência obrigatória.
@@ -166,12 +181,22 @@ app.MapGet("/accounts/{accountId:long}/movements", async (long accountId, Claims
 .WithName("GetMovementHistory");
 
 // POST /accounts/{id}/avatar — upload multipart (idempotência opcional).
-app.MapPost("/accounts/{accountId:long}/avatar", async (long accountId, IFormFile file, ClaimsPrincipal user,
+app.MapPost("/accounts/{accountId:long}/avatar", async (long accountId, IFormFile? file, ClaimsPrincipal user,
     IAccountService accounts, CancellationToken ct) =>
 {
     if (!IsOwner(user, accountId))
     {
         return Results.Forbid();
+    }
+
+    if (file is null)
+    {
+        return Results.BadRequest(new { error = "Avatar file is required." });
+    }
+
+    if (file.Length > AccountService.MaxAvatarBytes)
+    {
+        return Results.BadRequest(new { error = $"Avatar must be up to {AccountService.MaxAvatarBytes / 1024} KB." });
     }
 
     using var stream = new MemoryStream();
@@ -208,6 +233,7 @@ static IResult ToErrorResult(DomainError error) => error.Code switch
 {
     DomainErrorCode.AccountNotFound or DomainErrorCode.AvatarNotFound => Results.NotFound(new { error = error.Message }),
     DomainErrorCode.CpfAlreadyRegistered => Results.Conflict(new { error = error.Message }),
+    DomainErrorCode.AccountNumberCollision => Results.Json(new { error = error.Message }, statusCode: StatusCodes.Status503ServiceUnavailable),
     DomainErrorCode.InvalidCredentials => Results.Unauthorized(),
     _ => Results.BadRequest(new { error = error.Message })
 };

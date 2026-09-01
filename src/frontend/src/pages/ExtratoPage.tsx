@@ -62,6 +62,10 @@ export function ExtratoPage() {
     }
     fetchExtrato(account.id)
       .then((data) => {
+        // Um novo object URL é criado a cada refresh: revoga o anterior para não vazar.
+        if (avatarUrlRef.current) {
+          URL.revokeObjectURL(avatarUrlRef.current)
+        }
         avatarUrlRef.current = data.avatar
         setBalance(data.balance)
         setMovements(data.items)

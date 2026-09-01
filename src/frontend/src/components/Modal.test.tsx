@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { useState, type ReactNode } from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
 
-function renderModal(overrides: { open?: boolean; onClose?: () => void; dialogClassName?: string } = {}) {
+function renderModal(overrides: { open?: boolean; onClose?: () => void; dialogClassName?: string; children?: ReactNode } = {}) {
   const props = {
     open: true,
     onClose: vi.fn(),
@@ -47,6 +48,55 @@ describe('Modal', () => {
     renderModal()
     expect(screen.getByPlaceholderText('Primeiro campo')).toHaveFocus()
     expect(document.body.style.overflow).toBe('hidden')
+  })
+
+  it('trap o foco com Tab: do último elemento volta ao primeiro (e Shift+Tab inverte)', () => {
+    const { container } = renderModal({
+      children: (
+        <>
+          <input placeholder="Campo 1" />
+          <input placeholder="Campo 2" />
+        </>
+      ),
+    })
+    const campo1 = screen.getByPlaceholderText('Campo 1')
+    const campo2 = screen.getByPlaceholderText('Campo 2')
+
+    // Tab no último → primeiro (sem escapar do diálogo).
+    fireEvent.keyDown(campo2, { key: 'Tab' })
+    expect(campo1).toHaveFocus()
+
+    // Shift+Tab no primeiro → último.
+    fireEvent.keyDown(campo1, { key: 'Tab', shiftKey: true })
+    expect(campo2).toHaveFocus()
+
+    expect(container).toBeDefined()
+  })
+
+  it('restaura o foco no gatilho ao fechar', async () => {
+    const user = userEvent.setup()
+
+    function ModalWithTrigger() {
+      const [open, setOpen] = useState(false)
+      return (
+        <div>
+          <button type="button" onClick={() => setOpen(true)}>
+            Abrir
+          </button>
+          <Modal open={open} onClose={() => setOpen(false)} title="Título">
+            <input placeholder="Campo" />
+          </Modal>
+        </div>
+      )
+    }
+
+    render(<ModalWithTrigger />)
+    const trigger = screen.getByRole('button', { name: 'Abrir' })
+    await user.click(trigger)
+    expect(screen.getByPlaceholderText('Campo')).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(trigger).toHaveFocus()
   })
 
   it('restaura o scroll do body ao desmontar', () => {

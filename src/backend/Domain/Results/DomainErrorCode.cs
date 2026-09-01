@@ -8,6 +8,7 @@ public enum DomainErrorCode
     WeakPassword,
     InvalidAvatar,
     AvatarNotFound,
+    AccountNumberCollision,
     CpfAlreadyRegistered,
     AccountNotFound,
     InvalidCredentials,

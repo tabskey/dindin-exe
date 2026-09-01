@@ -663,3 +663,166 @@
   Vite 8, Vitest 3, Playwright 1.62)
 - Testes: sem mudança de código — nenhuma suíte reexecutada
 - ADR relacionado: 0001–0006
+
+## 2026-09-01 — Deep Copilot (docs: system design em Mermaid)
+- Ação: `docs/ARCHITECTURE.md` — o diagrama de system design (antes só `system-design.png`) ganhou
+  uma versão em **Mermaid** (`flowchart LR`), versionável e renderizada nativamente no GitHub:
+  Browser → Nginx (build estático + reverse proxy `/api`) → API .NET em camadas (filtros,
+  Application, Domain, Infrastructure) → SQLite; o PNG foi preservado como alternativa para slides
+- Motivo: pedido do usuário — diagrama editável/versionável para adicionar aos docs
+- Arquivos alterados: `docs/ARCHITECTURE.md`, `docs/AGENT_LOG.md`
+- Observações: diagrama reconstruído a partir da descrição textual da própria `ARCHITECTURE.md`
+  (seções 2, 4, 5, 8 e 9); mantido o escopo de runtime — as ferramentas de qualidade/CI (SonarQube,
+  GitHub Actions) seguem descritas em texto, não no fluxo
+- Testes: sem mudança de código — nenhuma suíte reexecutada
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (docs: system design original em Mermaid)
+- Ação: substituída a versão simplificada (`flowchart LR`) pelo diagrama original fornecido pelo
+  usuário (`flowchart TB`), que detalha Auth, AuditLog, IdempotencyRecord, SQLite e o volume, com
+  `classDef`/`style` — o PNG (`system-design.png`) é a renderização desse mesmo design
+- Motivo: usuário disponibilizou o design inicial real
+- Arquivos alterados: `docs/ARCHITECTURE.md`, `docs/AGENT_LOG.md`
+- Testes: sem mudança de código — nenhuma suíte reexecutada
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (docs: diagrama alinhado ao projeto + README)
+- Ação: o diagrama de system design foi conferido contra o código atual e ajustado — o label
+  `HTTPS` virou `HTTP (local)` (o Docker só expõe `80:80`, sem TLS) e o nó `SQLite` passou a citar
+  `avatar BLOB` (o avatar é coluna BLOB na tabela `Account`, não tabela própria); o diagrama
+  corrigido foi duplicado no `README.md` (seção Arquitetura → "Diagrama do system design")
+- Motivo: garantir que o diagrama bate com a implementação atual
+- Arquivos alterados: `docs/ARCHITECTURE.md`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: sem mudança de código — nenhuma suíte reexecutada
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: correções do code review — lote 1)
+- Ação: corrigidos os 3 bloqueantes do code review + 2 validações de entrada:
+  1. `AuditedAccountService` não grava mais a senha no AuditLog (serializa `Password = "***"`);
+  2. `IdempotencyFilter` escopa a chave por conta autenticada (`{accountId}:{key}`, anônimo usa
+     `anon:`) — replay não contorna mais o ownership check nem vaza resposta de outra conta;
+  3. `MovementModal` só descarta a Idempotency-Key depois do `getBalance` confirmar — retry não
+     duplica movimentação;
+  4. `AccountService`/`MovementService` rejeitam enum inválido (`AccountType`/`MovementType`) com
+     400 em vez de 500;
+  5. endpoint de avatar: `file` nulo e tamanho > 512 KB validados antes do buffering (400), e
+     `MaxAvatarBytes` virou `public const` (sem duplicar o limite).
+- Arquivos alterados: `Application/Services/AuditedAccountService.cs`,
+  `Application/Filters/IdempotencyFilter.cs`, `Application/Services/AccountService.cs`,
+  `Application/Services/MovementService.cs`, `Api/Program.cs`, `frontend/src/components/MovementModal.tsx`,
+  `Api.Tests/Application/IdempotencyFilterTests.cs` (+2 testes de escopo), `README.md` (109→113 testes)
+- Testes: backend `dotnet test` 113/113 verdes; frontend Vitest 79/79, `eslint` e `tsc -b`/build limpos
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: correções do code review — lote 2)
+- Ação: corrigidos os achados de robustez/concorrência que restavam (dinheiro e races):
+  1. **A1 — colisão de número de conta**: `AppDbContext` ganhou índice único global para
+     `AccountNumber` (migração `20260901151000_AddAccountNumberUniqueIndex`) e o `AccountService`
+     passou a pré-validar a unicidade com retry na geração (até `MaxAccountNumberAttempts = 5`,
+     re-criando a conta com número novo a cada colisão) — esgotado, responde 503
+     `AccountNumberCollision` em vez de 500; a corrida residual (o pre-check perdeu a disputa)
+     é capturada no `IdempotencyFilter` via `IsUniqueViolationOn("Accounts.AccountNumber")` → 503
+     retryável;
+  2. **A3 — corrida de CPF na criação**: a violação do índice único de CPF no commit (quando o
+     pre-check do `AccountService` perdeu a disputa) é capturada no `IdempotencyFilter` com
+     `IsUniqueViolationOn("Accounts.Cpf")` → rollback + 409 "This CPF is already registered.",
+     em vez de 500;
+  3. **M3 — idempotência não cacheia falha**: `IdempotencyFilter` só grava o registro de
+     idempotência para respostas 2xx (`statusCode is >= 200 and < 300`) — uma falha (4xx/5xx)
+     pode ser reenviada com a mesma chave e reexecuta em vez de ficar "congelada" como sucesso;
+     o replay de sucesso com corpo divergente continua respondendo 409 sem sobrescrever o
+     registro; `IdempotencyFilterTests` atualizado para o novo contrato;
+  4. **M4 — hash sem segredos**: `ComputeRequestHash` hasheia o `CreateAccountRequest` com
+     `Password = "***"` (a senha não entra no hash de idempotência — o replay não exige reenviar
+     senha em claro); no upload de avatar (sem DTO em `Application.Dtos`), o hash passa a ser do
+     conteúdo do arquivo, com o stream reposicionado para o handler;
+  5. **M7 — rate limiting**: `Program.cs` aplica `AddRateLimiter` (fixed window, **30 req/min**,
+     `QueueLimit = 0`) com `RequireRateLimiting("sensitive-write")` nos dois endpoints sensíveis —
+     `POST /accounts` e `POST /auth/login` — e `RejectionStatusCode` 429;
+  6. **CPF — validação de formato**: `AccountService.CreateAsync` rejeita CPF sem exatamente
+     11 dígitos → 400 "CPF must have exactly 11 digits." (validação de formato apenas; o dígito
+     verificador continua fora do escopo — o frontend não muda, o erro vem da API no submit);
+  7. **Frontend**: botão "Cancelar" do `MovementModal` também é desabilitado durante o submit
+     (o de "Enviar" já era) — impede fechar o modal com a promessa de movimentação em voo.
+- Arquivos alterados: `Infrastructure/Persistence/AppDbContext.cs` (índice único), nova migração
+  `Infrastructure/Migrations/20260901151000_AddAccountNumberUniqueIndex.cs` (+ Designer),
+  `Domain/Results/DomainErrorCode.cs` (+`AccountNumberCollision`),
+  `Application/Services/AccountService.cs` (retry de número, validação de 11 dígitos),
+  `Application/Filters/IdempotencyFilter.cs` (só 2xx no cache, hash sem senha, catches 409/503),
+  `Api/Program.cs` (rate limiter + mapeamento 503), `Api.Tests/Application/IdempotencyFilterTests.cs`,
+  `Api.Tests/Infrastructure/PersistenceTests.cs` (2 migrações), `frontend/src/components/MovementModal.tsx`
+- Testes: backend `dotnet test` 113/113 verdes; frontend Vitest 79/79, `eslint` e `tsc -b`/build limpos
+- ADR relacionado: — (correções da revisão; sem mudança de contrato)
+
+## 2026-09-01 — Deep Copilot (hotfix: finalização — lote 3)
+- Ação: fechamento da branch `hotfix` — itens restantes da revisão (frontend) + testes para os
+  novos ramos do backend:
+  1. **ExtratoPage**: `loadExtrato` agora revoga o object URL anterior antes de trocar pelo novo
+     (cada refresh criava um URL novo sem liberar o antigo — vazamento de memória por refresh;
+     o unmount e o `reloadAvatar` já revogavam);
+  2. **api.ts**: timeout de 15s em todas as chamadas (`fetchWithTimeout` com `AbortController`
+     manual — `AbortSignal.timeout` não existe no jsdom dos testes; o timer é limpo no `finally`);
+  3. **Modal**: focus trap completo (Tab/Shift+Tab ciclam dentro do diálogo) + restauração do
+     foco no gatilho ao fechar — 2 testes novos no `Modal.test.tsx` (trap e restauração);
+  4. **nginx.conf**: security headers básicos (`X-Content-Type-Options: nosniff`,
+     `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`) — CSP estrito fica
+     documentado como evolução futura (script anti-FOUC inline no `index.html` exigiria hash);
+  5. **Backend — testes para os ramos novos**: `FakeAccountRepository` ganhou contador de
+     colisões de número; `AccountServiceTests` cobrem o retry com sucesso e a exaustão
+     (`AccountNumberCollision`); `IdempotencyFilterTests` cobrem os catches de violação única
+     (CPF → 409, AccountNumber → 503, ambos com rollback), a não-cacheação de falha (M3), a
+     exclusão da senha do hash (`CreateAccountRequest`) e o hash de avatar por conteúdo;
+     novo `RateLimitTests` (integração, factory própria) valida o 429 após 30 logins na janela;
+  6. **README**: números atualizados — backend **121 testes / 94,7%** de linhas, frontend
+     **86 testes / 96,9%** (81 Vitest + 5 E2E).
+- Arquivos alterados: `frontend/src/pages/ExtratoPage.tsx`, `frontend/src/lib/api.ts`,
+  `frontend/src/components/Modal.tsx`, `frontend/src/components/Modal.test.tsx`,
+  `frontend/nginx.conf`, `backend/Api.Tests/Application/TestDoubles.cs`,
+  `backend/Api.Tests/Application/AccountServiceTests.cs`,
+  `backend/Api.Tests/Application/IdempotencyFilterTests.cs`, criado
+  `backend/Api.Tests/Integration/RateLimitTests.cs`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: backend `dotnet test` 121/121 verdes com gate de cobertura (total 94,74% ≥ 80%);
+  frontend Vitest 81/81, `eslint` e `tsc -b`/build limpos
+- ADR relacionado: —
+
+## 2026-09-01 — Deep Copilot (hotfix: validação E2E no Docker após o commit)
+- Ação: stack reconstruído (`docker compose up -d --build`, 19s com cache) e E2E Playwright
+  rodado contra o código novo:
+  - a migração `20260901151000_AddAccountNumberUniqueIndex` foi aplicada **no volume existente**
+    sem erro (o app subiu e passou a escutar em :8080) — o índice único não quebrou dados antigos;
+  - login via proxy `http://localhost/api/auth/login` → 200 com JWT (nginx com os security
+    headers novos válido, seed intacto);
+  - `npm run test:e2e` → **5/5 verdes** (9,8s): smoke, login → extrato, depósito +50, saque −20
+    e criar conta → CPF preenchido (fluxo que exercita a validação de 11 dígitos do CPF); o
+    rate limit de 30/min não interferiu (5-6 logins por execução).
+- Motivo: usuário confirmou que o Docker estava no ar — faltava validar os lotes 1-3 no ambiente real
+- Arquivos alterados: nenhum (validação); `docs/AGENT_LOG.md`
+- Testes: E2E 5/5 verdes contra os containers novos
+- ADR relacionado: 0005 (setup do E2E)
+
+## 2026-09-01 — Deep Copilot (hotfix: code review sênior pré-merge)
+- Ação: varredura completa de `main..hotfix` (diff + código-fonte) antes do push. Dois achados
+  Major corrigidos; demais achados registrados como nits sem ação imediata:
+  1. **IdempotencyFilter — corrida de chave concorrente com corpo divergente** (Major): no catch
+     do `IdempotencyRecords` a perdedora reexecutava e devolvia a resposta do vencedor **sem**
+     comparar o hash do request — a perdedora com corpo diferente recebia o 200 do vencedor em
+     vez de 409 (o contrato "mesma chave + request diferente → 409" só valia no caso sequencial).
+     Corrigido: o replay do vencedor agora compara `RequestPath` e `RequestHash` e responde 409
+     em caso de divergência (+ teste `InvokeAsync_KeyRaceWithDifferentRequest_ReturnsConflict`);
+  2. **AccountService — CPF validado ≠ CPF armazenado** (Major): a checagem contava 11 dígitos
+     mas gravava o CPF cru (ex.: `111.111.111-11x` passava e era persistido com o `x`). Corrigido:
+     rejeita qualquer caractere que não seja dígito ou a máscara `000.000.000-00` (+ teoria
+     `CreateAsync_WithMalformedCpf_Fails`).
+- Nits anotados (sem correção nesta rodada): detecção de violação única por substring da mensagem
+  do SQLite (frágil se o provider mudar — app é SQLite-only); descoberta do DTO por `Namespace`
+  em `ComputeRequestHash` (um `is CreateMovementRequest` seria mais robusto); sentinela `"***"`
+  no hash de idempotência colide com uma senha literal `***`; `CreateAccountModal` não reutiliza
+  a `Idempotency-Key` no retry (a unicidade do CPF é quem evita duplicata — 409 confunde um
+  retry pós-timeout de criação bem-sucedida); 429 do rate limiter sem corpo JSON (frontend cai
+  no fallback genérico); mensagens de erro do backend em inglês exibidas como estão.
+- Arquivos alterados: `backend/Application/Filters/IdempotencyFilter.cs`,
+  `backend/Application/Services/AccountService.cs`,
+  `backend/Api.Tests/Application/IdempotencyFilterTests.cs`,
+  `backend/Api.Tests/Application/AccountServiceTests.cs`, `README.md`, `docs/AGENT_LOG.md`
+- Testes: backend `dotnet test` 125/125 com gate (total 94,83% ≥ 80%), `dotnet format` limpo
+- ADR relacionado: —

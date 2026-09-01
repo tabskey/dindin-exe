@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
             account.Property(a => a.AccountNumber).HasMaxLength(20).IsRequired();
             account.Property(a => a.Name).HasMaxLength(100).IsRequired();
             account.Property(a => a.Cpf).HasMaxLength(14).IsRequired();
+            account.HasIndex(a => a.AccountNumber).IsUnique();
             account.HasIndex(a => a.Cpf).IsUnique();
             account.Property(a => a.PasswordHash).IsRequired();
             account.Property(a => a.Balance);

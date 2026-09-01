@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Linq;
 using Application.Abstractions;
+using Application.Dtos;
 using Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,11 @@ public sealed class IdempotencyFilter : IEndpointFilter
         }
 
         var key = hasKey ? keyValues.ToString() : null;
+        // A chave é escopada por conta autenticada: o replay de uma Idempotency-Key não
+        // recupera a resposta de outra conta, e o ownership check do handler (IsOwner) não
+        // é contornado por chave de terceiros. Endpoints anônimos usam o escopo "anon".
+        var owner = hasKey ? http.User.Claims.FirstOrDefault(c => c.Type == "accountId")?.Value : null;
+        key = hasKey ? $"{(owner ?? "anon")}:{key}" : null;
         var requestHash = hasKey ? ComputeRequestHash(context) : null;
 
         var unitOfWork = http.RequestServices.GetRequiredService<IUnitOfWork>();
@@ -58,18 +65,36 @@ public sealed class IdempotencyFilter : IEndpointFilter
             if (hasKey)
             {
                 var statusCode = (result as IStatusCodeHttpResult)?.StatusCode ?? 200;
-                var body = (result as IValueHttpResult)?.Value is { } value
-                    ? JsonSerializer.Serialize(value, JsonOptions)
-                    : string.Empty;
+                // Só respostas de sucesso entram no cache de idempotência: uma falha (4xx/5xx)
+                // pode ser reenviada com a mesma chave — não fica "congelada" como sucesso.
+                if (statusCode is >= 200 and < 300)
+                {
+                    var body = (result as IValueHttpResult)?.Value is { } value
+                        ? JsonSerializer.Serialize(value, JsonOptions)
+                        : string.Empty;
 
-                var repository = http.RequestServices.GetRequiredService<IIdempotencyRepository>();
-                await repository.AddAsync(
-                    IdempotencyRecord.Create(key!, http.Request.Path.ToString(), requestHash!, statusCode, body),
-                    http.RequestAborted);
+                    var repository = http.RequestServices.GetRequiredService<IIdempotencyRepository>();
+                    await repository.AddAsync(
+                        IdempotencyRecord.Create(key!, http.Request.Path.ToString(), requestHash!, statusCode, body),
+                        http.RequestAborted);
+                }
             }
 
             await unitOfWork.CommitAsync(http.RequestAborted);
             return result;
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolationOn(ex, "Accounts.Cpf"))
+        {
+            // Corrida de criação com o mesmo CPF (o pre-check do service perdeu a disputa):
+            // desfaz a transação e responde 409, em vez de 500.
+            await unitOfWork.RollbackAsync(http.RequestAborted);
+            return Results.Conflict(new { error = "This CPF is already registered." });
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolationOn(ex, "Accounts.AccountNumber"))
+        {
+            // Corrida residual no número de conta aleatório: retryável pelo cliente.
+            await unitOfWork.RollbackAsync(http.RequestAborted);
+            return Results.Json(new { error = "Could not allocate a unique account number. Please retry." }, statusCode: 503);
         }
         catch (DbUpdateException) when (hasKey)
         {
@@ -81,7 +106,9 @@ public sealed class IdempotencyFilter : IEndpointFilter
             var winner = await repository.GetByKeyAsync(key!, http.RequestAborted);
             if (winner is not null)
             {
-                return Results.Content(winner.ResponseBody, "application/json", statusCode: winner.ResponseStatusCode);
+                return winner.RequestPath != http.Request.Path.ToString() || winner.RequestHash != requestHash
+                    ? Results.Conflict(new { error = "Idempotency-Key was already used with a different request." })
+                    : Results.Content(winner.ResponseBody, "application/json", statusCode: winner.ResponseStatusCode);
             }
 
             throw;
@@ -105,8 +132,37 @@ public sealed class IdempotencyFilter : IEndpointFilter
             : context.Arguments.ToArray();
 
         var request = args.FirstOrDefault(a => a is not null && a.GetType().Namespace == "Application.Dtos");
-        return request is null
-            ? string.Empty
-            : Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(request, JsonOptions)));
+        if (request is CreateAccountRequest createRequest)
+        {
+            // A senha não entra no hash de idempotência (mesmo motivo do audit: nada sensível em claro).
+            return Hash(createRequest with { Password = "***" });
+        }
+
+        if (request is not null)
+        {
+            return Hash(request);
+        }
+
+        // Avatar: não há DTO em Application.Dtos — hasheia o conteúdo do arquivo para o replay
+        // detectar um arquivo diferente. O stream é reposicionado para o handler poder ler.
+        if (args.FirstOrDefault(a => a is IFormFile) is IFormFile file)
+        {
+            var stream = file.OpenReadStream();
+            var hash = Convert.ToHexString(SHA256.HashData(stream));
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
+
+            return hash;
+        }
+
+        return string.Empty;
     }
+
+    private static string Hash(object value) =>
+        Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions)));
+
+    private static bool IsUniqueViolationOn(DbUpdateException ex, string column) =>
+        ex.InnerException?.Message?.Contains($"UNIQUE constraint failed: {column}", StringComparison.OrdinalIgnoreCase) is true;
 }

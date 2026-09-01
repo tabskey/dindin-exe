@@ -66,8 +66,9 @@ public class PersistenceTests : IDisposable
         Assert.Equal(3, await db.Accounts.CountAsync());
         Assert.Equal(8, await db.Movements.CountAsync());
         var applied = await db.Database.GetAppliedMigrationsAsync();
-        Assert.Single(applied);
+        Assert.Equal(2, applied.Count());
         Assert.Contains(applied, m => m.EndsWith("_InitialCreate"));
+        Assert.Contains(applied, m => m.EndsWith("_AddAccountNumberUniqueIndex"));
     }
 
     [Fact]

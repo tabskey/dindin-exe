@@ -26,6 +26,7 @@ export function Modal({ open, onClose, title, children, dialogClassName }: Modal
     }
 
     const previousOverflow = document.body.style.overflow
+    const previouslyFocused = document.activeElement as HTMLElement | null
     document.body.style.overflow = 'hidden'
     const focusable = dialogRef.current?.querySelector<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -35,6 +36,33 @@ export function Modal({ open, onClose, title, children, dialogClassName }: Modal
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         onCloseRef.current()
+        return
+      }
+
+      // Focus trap: Tab cicla dentro do diálogo em vez de escapar para a página.
+      if (event.key === 'Tab') {
+        const dialog = dialogRef.current
+        if (!dialog) {
+          return
+        }
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((element) => !element.hasAttribute('disabled'))
+        if (focusables.length === 0) {
+          event.preventDefault()
+          return
+        }
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
       }
     }
 
@@ -42,6 +70,8 @@ export function Modal({ open, onClose, title, children, dialogClassName }: Modal
     return () => {
       document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', handleKeyDown)
+      // Restaura o foco no elemento que abriu o modal.
+      previouslyFocused?.focus()
     }
   }, [open])
 

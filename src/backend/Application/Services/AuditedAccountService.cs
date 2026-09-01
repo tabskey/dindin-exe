@@ -24,7 +24,8 @@ public sealed class AuditedAccountService : IAccountService
         if (result.IsSuccess)
         {
             await _audit.AddAsync(
-                AuditLog.Create("Account", result.Value!.Id.ToString(), "create", JsonSerializer.Serialize(request, JsonOptions)),
+                AuditLog.Create("Account", result.Value!.Id.ToString(), "create",
+                    JsonSerializer.Serialize(request with { Password = "***" }, JsonOptions)),
                 cancellationToken);
             await _audit.SaveChangesAsync(cancellationToken);
         }
