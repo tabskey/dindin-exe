@@ -880,3 +880,14 @@
 - Observação: labels de movimentações existentes ficam congelados no histórico (decisão da
   ADR 0002) — só movimentações novas ganham o formato com número de conta.
 - ADR relacionado: 0007
+
+## 2026-09-01 — Deep Copilot (feat: número da conta e tipo no cabeçalho do extrato)
+- Ação: pedido do usuário — exibir, logo abaixo do "Olá, {nome}" do extrato, um campo pequeno
+  com o número da conta e o tipo (dados já presentes no `AccountDto` do login).
+- Frontend: `ExtratoPage` ganhou `accountTypeLabel` (0 = Conta Corrente, 1 = Conta Poupança) e
+  a linha `Conta {accountNumber} · {tipo}` sob o `h1` da saudação.
+- Testes: asserção nova em `ExtratoPage.test.tsx` (`Conta 00315-41 · Conta Corrente`).
+- Arquivos alterados: `frontend/src/pages/ExtratoPage.tsx`,
+  `frontend/src/pages/ExtratoPage.test.tsx`, `docs/AGENT_LOG.md`
+- Testes: frontend 81/81 (vitest), lint e build limpos; E2E 6/6 no Docker
+- ADR relacionado: —
