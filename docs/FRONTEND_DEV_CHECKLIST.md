@@ -130,14 +130,15 @@ com o código, em cada fase.
 
 ## Fase 6 — Validação final e documentação
 
-- [ ] Fluxo manual completo no Docker: `docker compose up --build` (imagem do frontend nova) e
-      execução do fluxo login → criar conta → depósito → saque.
-- [ ] `npm run build`, `npm run lint` e `npm test` verdes.
-- [ ] Playwright E2E completo no navegador: login → extrato → depósito → saque, e
+- [x] Stack no Docker com imagem nova: `docker compose up -d --build` (volume SQLite recriado —
+      backup em `dindin-dev-db-backup.db` — após a API falhar com schema antigo); fluxos
+      login → depósito → saque → criar conta exercitados pelo E2E contra o stack.
+- [x] `npm run build`, `npm run lint` e `npm test` verdes.
+- [x] Playwright E2E completo no navegador (5/5): login → extrato → depósito → saque, e
       criar conta → login preenchido.
-- [ ] SonarQube: análise executada (0 bugs / 0 code smells / 0 vulnerabilidades; falso
-      positivo do CSS do Tailwind v4 resolvido excluindo `src/index.css`); falta cobertura
-      ≥ 80% (hoje 73,5%).
-- [ ] ADR 0004 e ADR 0005 finalizadas com as decisões como executadas.
-- [ ] Atualizar `README.md` (status do frontend + seção de testes) e `docs/AGENT_LOG.md`;
+- [x] SonarQube: análise executada com cobertura ≥ 80% (95,7% de linhas; 0 bugs / 0 code
+      smells / 0 vulnerabilidades; falso positivo do CSS do Tailwind v4 resolvido excluindo
+      `src/index.css`).
+- [x] ADR 0004 e ADR 0005 finalizadas com as decisões como executadas (seção própria em cada uma).
+- [x] Atualizar `README.md` (status do frontend + seção de testes) e `docs/AGENT_LOG.md`;
       marcar itens deste checklist.

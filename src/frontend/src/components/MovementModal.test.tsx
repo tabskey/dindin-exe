@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MovementModal } from './MovementModal'
@@ -162,10 +162,42 @@ describe('MovementModal', () => {
     const submitButton = screen.getByRole('button', { name: 'Enviando…' })
     expect(submitButton).toBeDisabled()
 
+    // Segundo submit enquanto envia: ignorado — sem chamada extra à API.
+    const form = document.querySelector<HTMLFormElement>('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form!)
+    expect(mockCreateMovement).toHaveBeenCalledTimes(1)
+
     await act(async () => {
       resolveCreate(movement)
     })
     expect(await screen.findByText('Depósito realizado')).toBeInTheDocument()
+  })
+
+  it('valida número/dígito incompletos da conta no depósito', async () => {
+    const user = userEvent.setup()
+    setup()
+
+    await user.type(screen.getByPlaceholderText('0,00'), '100')
+    await user.click(screen.getByRole('button', { name: 'Número da conta' }))
+    await user.type(screen.getByPlaceholderText('Número (00000)'), '003')
+    await user.click(screen.getByRole('button', { name: 'Depositar' }))
+
+    expect(await screen.findByText('Informe número e dígito da conta (XXXXX-XX).')).toBeInTheDocument()
+    expect(mockCreateMovement).not.toHaveBeenCalled()
+  })
+
+  it('alterna saque/depósito e contraparte CPF/conta', async () => {
+    const user = userEvent.setup()
+    setup()
+
+    await user.click(screen.getByRole('button', { name: 'Saque' }))
+    await user.click(screen.getByRole('button', { name: 'Depósito' }))
+    expect(screen.getByText('Pra quem?')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Número da conta' }))
+    await user.click(screen.getByRole('button', { name: 'CPF' }))
+    expect(screen.getByPlaceholderText('000.000.000-00')).toBeInTheDocument()
   })
 
   it('fecha com Concluir após o sucesso e com Cancelar no formulário', async () => {

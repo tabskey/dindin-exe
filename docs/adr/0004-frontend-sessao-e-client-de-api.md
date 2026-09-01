@@ -50,6 +50,22 @@ mais telas, então a navegação deve ficar explícita, extensível e com URL po
   campo, trava de scroll — sem lib de UI.
 - **`src/lib/masks.ts`**: máscaras locais (CPF `000.000.000-00`, conta `XXXXX-XX`, valor em R$).
 
+## Decisões como executadas (Fase 6)
+
+- **Rotas e guard**: `/login` pública e `/extrato` protegida via `Navigate`, exatamente como
+  decidido; após login, navega para `/extrato`.
+- **Sessão**: `AuthContext` com token + conta persistidos (`dindin-token`, `dindin-account`);
+  logout automático em qualquer `401` via `registerUnauthorizedHandler` no `src/lib/api.ts`
+  (token expira em 120 min).
+- **Client `src/lib/api.ts`**: além dos endpoints de login/conta/extrato, ganhou movimentação
+  (com `Idempotency-Key` por tentativa), avatar (GET blob / POST multipart) e `ApiError` com
+  `status`; erros mapeados por status para mensagens pt-BR.
+- **Tema**: `ThemeToggle` é flutuante na tela de login e **inline no header do extrato** (evita
+  sobreposição com o botão "Sair" em telas pequenas); tema persistido em `localStorage`.
+- **`Modal`**: overlay com `backdrop-blur-sm`, fecha com Esc/clique fora, `aria-modal` e foco no
+  primeiro campo.
+- **Testes**: Vitest + Testing Library e Playwright — ver ADR 0005.
+
 ## Consequências
 
 - Nova dependência: `react-router-dom`.

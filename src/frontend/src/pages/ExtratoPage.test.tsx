@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExtratoPage } from './ExtratoPage'
@@ -17,13 +17,14 @@ vi.mock('react-router-dom', () => ({
   useNavigate: vi.fn(),
 }))
 
-import { getAvatar, getBalance, getMovements, type BalanceDto, type MovementDto } from '../lib/api'
+import { getAvatar, getBalance, getMovements, updateAvatar, type BalanceDto, type MovementDto } from '../lib/api'
 import { useAuth } from '../context/auth'
 import { useNavigate } from 'react-router-dom'
 
 const mockGetAvatar = vi.mocked(getAvatar)
 const mockGetBalance = vi.mocked(getBalance)
 const mockGetMovements = vi.mocked(getMovements)
+const mockUpdateAvatar = vi.mocked(updateAvatar)
 const mockUseAuth = vi.mocked(useAuth)
 const mockNavigate = vi.mocked(useNavigate)
 
@@ -163,5 +164,43 @@ describe('ExtratoPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Opções do avatar' }))
     expect(screen.getByRole('button', { name: 'Ver imagem de perfil' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Trocar imagem de perfil' })).toBeInTheDocument()
+  })
+
+  it('recarrega o avatar após o upload (refresh silencioso)', async () => {
+    const user = userEvent.setup()
+    mockUpdateAvatar.mockResolvedValue(undefined)
+    mockGetAvatar.mockResolvedValue(new Blob(['fake'], { type: 'image/png' }))
+    render(<ExtratoPage />)
+    await screen.findByText(/1\.250,50/)
+
+    await user.click(screen.getByRole('button', { name: 'Opções do avatar' }))
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')
+    expect(input).not.toBeNull()
+    fireEvent.change(input!, { target: { files: [new File(['x'], 'avatar.png', { type: 'image/png' })] } })
+
+    await waitFor(() => {
+      expect(mockUpdateAvatar).toHaveBeenCalledTimes(1)
+      // reloadAvatar roda após o upload: busca o avatar de novo e revoga o antigo.
+      expect(mockGetAvatar).toHaveBeenCalledTimes(2)
+    })
+    expect(screen.getByAltText('Avatar de Ana Teste')).toHaveAttribute('src', 'blob:avatar-mock')
+  })
+
+  it('fecha o modal de movimentação pelo Cancelar', async () => {
+    const user = userEvent.setup()
+    render(<ExtratoPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Nova movimentação' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('fecha o modal do avatar pelo X', async () => {
+    const user = userEvent.setup()
+    render(<ExtratoPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Opções do avatar' }))
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

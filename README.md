@@ -10,7 +10,7 @@
 
 O projeto é composto por uma API em **C# / .NET 10 (Minimal API)** e um frontend em **React 19 + Vite + TypeScript**.
 
-> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend já tem a página de login com tema claro/escuro (Tailwind CSS); a tela de extrato e a integração com a API são os próximos passos. O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
+> **Status atual:** o backend está completo — regras de negócio, persistência (EF Core + SQLite), autenticação JWT, endpoints, idempotência, auditoria, controle de concorrência e testes (unitários + integração). O frontend também está completo — login, extrato com saldo/histórico, movimentações (depósito/saque com contraparte), avatar e tema claro/escuro, com testes (Vitest + Playwright) e análise de qualidade (SonarQube local). O andamento detalhado está em [`docs/API_DEV_CHECKLIST.md`](./docs/API_DEV_CHECKLIST.md), [`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md) e [`docs/AGENT_LOG.md`](./docs/AGENT_LOG.md).
 
 A documentação completa da arquitetura está disponível em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), incluindo o diagrama de system design e os ADRs em [`docs/adr/`](./docs/adr/).
 
@@ -79,7 +79,7 @@ O backend sobe em `http://localhost:5041`, conforme o perfil `http` definido em 
 
 O frontend sobe em `http://localhost:5173`.
 
-Nesse modo não há o proxy reverso do Nginx e, no estado atual, o frontend ainda não realiza chamadas à API (tela de extrato pendente). O fluxo manual completo de requisições está em [`src/backend/Api/Api.http`](./src/backend/Api/Api.http).
+Nesse modo não há o proxy reverso do Nginx: o Vite repassa `/api` para `http://localhost` (Docker, porta 80) — se a API rodar fora do Docker (`dotnet run`, porta 5041), ajuste o `target` em `src/frontend/vite.config.ts`. O fluxo manual completo de requisições está em [`src/backend/Api/Api.http`](./src/backend/Api/Api.http).
 
 ---
 
@@ -205,12 +205,18 @@ Regras de domínio e serviços: saldo negativo, strategies de crédito/débito, 
 
 Cobertura total de linhas: **95,3%** — o CI (`ci-test.yml`) falha se ficar abaixo de 80%.
 
-### Testes do frontend (próximas fases)
+### Testes do frontend
 
-O frontend ganha testes a partir da Fase 3 do checklist (ADR 0005): **Vitest + Testing Library**
-(componentes e regras), **Playwright** (fluxos E2E no navegador) e **SonarQube local** via Docker
-(qualidade e cobertura, meta ≥ 80% de linhas) — detalhes em
-[`docs/FRONTEND_DEV_CHECKLIST.md`](./docs/FRONTEND_DEV_CHECKLIST.md).
+**84 testes, todos verdes**: 79 de componentes/regras (Vitest + Testing Library) e 5 E2E
+(Playwright, fluxos completos no navegador).
+
+- **Vitest + Testing Library** (`npm test`): máscaras, client de API (fetch mockado), login,
+  criação de conta, extrato, movimentação, avatar, modal e tema; `npm run coverage` gera o `lcov`
+  que alimenta o SonarQube.
+- **Playwright** (`npm run test:e2e`): login → extrato → depósito → saque e criar conta → login
+  preenchido; requer o app + API no ar (`docker compose up -d --build`) com o seed carregado.
+- **SonarQube local** (`docker-compose.sonarqube.yml`, http://localhost:9000): análise via scanner
+  em container; cobertura de linhas **95,7%** (meta ≥ 80%), 0 bugs, 0 code smells, 0 vulnerabilidades.
 
 ---
 
@@ -235,7 +241,7 @@ src/
 │   ├── Domain/             # Entidades, regras de negócio, strategies
 │   ├── Infrastructure/     # EF Core, repositórios, migrações, seed
 │   └── Api.Tests/          # Testes unitários e de integração
-└── frontend/               # React 19 + Vite + TypeScript (starter)
+└── frontend/               # React 19 + Vite + TypeScript (login, extrato, movimentação, avatar)
 
 docs/
 ├── ARCHITECTURE.md         # Arquitetura completa + diagrama
@@ -247,6 +253,7 @@ docs/
 └── arquitetura-sistema-conta.pdf
 
 docker-compose.yml          # API + frontend + volume SQLite
+docker-compose.sonarqube.yml # SonarQube local (qualidade/cobertura do frontend)
 ```
 
 ---

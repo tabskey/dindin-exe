@@ -1,5 +1,5 @@
 import { ArrowLeft, Image, Upload, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { updateAvatar } from '../lib/api'
 import { Modal } from './Modal'
 
@@ -28,12 +28,17 @@ export function AvatarModal({
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
+  const [lastOpen, setLastOpen] = useState(open)
+
+  // Reset ao fechar: estado derivado da prop `open`, ajustado durante a
+  // renderização (padrão recomendado — sem efeito, evita cascade de renders).
+  if (lastOpen !== open) {
+    setLastOpen(open)
     if (!open) {
       setViewing(false)
       setError('')
     }
-  }, [open])
+  }
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]

@@ -607,3 +607,44 @@
   (3) interface em http://localhost:9000 (admin/admin; token `dindin-scan`)
 - Testes: nenhum código de app alterado; re-análise SonarQube com 0 issues abertas
 - ADR relacionado: 0005
+
+## 2026-09-01 — Deep Copilot (Frontend: cobertura ≥ 80% no SonarQube)
+- Ação: cobertura do frontend subiu de 73,5% para **95,7%** no SonarQube (meta da Fase 6: ≥ 80%),
+  com 79/79 testes. Principais adições: `src/lib/api.test.ts` (22 testes do client HTTP — token,
+  erros por status, idempotência, avatar; `api.ts` em 100%), `ThemeToggle.test.tsx` (alternância
+  de tema) e testes de ramos em `MovementModal` (número de conta inválido, alternância de toggles,
+  submit duplo), `AvatarModal` (sem arquivo, clique no seletor), `ExtratoPage` (upload de avatar →
+  reloadAvatar, fechamento dos modais) e `LoginPage` (submit duplo, fechamento e criação via modal)
+- Motivo: pedido do usuário — fechar a Fase 6 com cobertura ≥ 80%
+- Arquivos alterados: criados `src/frontend/src/lib/api.test.ts` e
+  `src/frontend/src/components/ThemeToggle.test.tsx`; editados `AvatarModal.test.tsx`,
+  `MovementModal.test.tsx`, `ExtratoPage.test.tsx`, `LoginPage.test.tsx` e `AvatarModal.tsx`
+  (reset ao fechar sem efeito — rule `react-hooks/set-state-in-effect`); docs:
+  `docs/FRONTEND_DEV_CHECKLIST.md`
+- Observações: (1) `apply_patch` multi-hunk falhou em alguns arquivos de teste (relatava sucesso
+  sem persistir) — refeito com `str_replace`/`write_file`; (2) o eslint agora exige reset de
+  estado durante a renderização (sem setState em efeito)
+- Testes: `npm test` 79/79; `npm run lint` e `npm run build` verdes; SonarQube: cobertura 95,7%,
+  0 bugs, 0 code smells, 0 vulnerabilidades
+- ADR relacionado: 0005
+
+## 2026-09-01 — Deep Copilot (Fase 6: E2E Playwright + documentação final)
+- Ação: `e2e/login.spec.ts` reescrito com os fluxos completos (smoke, login → extrato, depósito
+  com saldo +50, saque com saldo −20 e criar conta → CPF preenchido), usando
+  `data-testid="balance-value"` no card de saldo (ExtratoPage) para leitura estável do valor.
+  Stack do Docker: `docker compose up -d --build`; a API falhava no boot (volume com schema
+  antigo, `table "Accounts" already exists` na migração recriada do ADR 0006) — backup do DB em
+  `dindin-dev-db-backup.db`, `docker compose down -v` e volume recriado. E2E: **5/5 verdes**.
+  Docs: ADR 0004/0005 ganharam seção "Decisões como executadas (Fase 6)"; README atualizado
+  (status do frontend completo, modo dev sem Nginx, seção de testes do frontend com 84 testes,
+  estrutura); checklist da Fase 6 marcado completo.
+- Motivo: pedido do usuário — seguir para a última etapa (Fase 6)
+- Arquivos alterados: `src/frontend/e2e/login.spec.ts`, `src/frontend/src/pages/ExtratoPage.tsx`
+  (data-testid no saldo), `docs/FRONTEND_DEV_CHECKLIST.md`, `docs/AGENT_LOG.md`, `README.md`,
+  `docs/adr/0004-frontend-sessao-e-client-de-api.md`, `docs/adr/0005-testes-e-qualidade-no-frontend.md`;
+  criado `dindin-dev-db-backup.db` (backup do volume recriado)
+- Observações: (1) o locator do diálogo de movimentação não pode filtrar por nome ("Depósito"),
+  pois o título muda para "Saque" ao alternar; (2) o título do diálogo vira o nome acessível do
+  `role=dialog` — usado `page.getByRole('dialog')` sem filtro
+- Testes: `npm run test:e2e` 5/5; `npm test` 79/79, lint e build verdes (rodados na sequência)
+- ADR relacionado: 0004, 0005, 0006

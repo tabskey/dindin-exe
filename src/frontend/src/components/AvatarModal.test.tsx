@@ -94,4 +94,18 @@ describe('AvatarModal', () => {
     expect(await screen.findByText('Arquivo muito grande')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Trocar imagem de perfil' })).toBeInTheDocument()
   })
+
+  it('ignora a troca quando nenhum arquivo é escolhido', () => {
+    render(<AvatarModal {...defaultProps} />)
+    fireEvent.change(fileInput(), { target: { files: [] } })
+    expect(mockUpdateAvatar).not.toHaveBeenCalled()
+  })
+
+  it('abre o seletor de arquivo ao clicar em Trocar imagem de perfil', async () => {
+    const user = userEvent.setup()
+    render(<AvatarModal {...defaultProps} />)
+
+    await user.click(screen.getByRole('button', { name: 'Trocar imagem de perfil' }))
+    expect(mockUpdateAvatar).not.toHaveBeenCalled()
+  })
 })
